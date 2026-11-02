@@ -18,7 +18,7 @@ permissions:
 jobs:
   quality:
     name: Lint, tipos y migraciones
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -43,7 +43,7 @@ jobs:
 
   unit:
     name: Unitarias, seguridad y propiedades
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -70,7 +70,7 @@ jobs:
 
   integration:
     name: Integración (D1 real en memoria)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -89,7 +89,7 @@ jobs:
 
   build:
     name: Empaquetado del Worker
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -108,7 +108,7 @@ jobs:
 
   audit:
     name: Auditoría de dependencias
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     # En dev solo informa (un CVE nuevo no debe bloquear un PR ajeno); en
     # main es obligatorio.
