@@ -1,21 +1,23 @@
-// schemas/comments.ts
-import { sql } from "drizzle-orm";
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import { COMMENT_STATUSES } from "../lib/constants.js";
+import { timestamps } from "./common.js";
 
 export const comments = sqliteTable("comments", {
-	comment_id: int().primaryKey({ autoIncrement: true }),
-	name: text().notNull(),
-	job: text(), // Opcional
-	description: text().notNull(),
-	direction: text().notNull(),
-	country_flag: text().notNull(),
-	country: text().notNull(),
-	created_at: text("created_at").notNull().default(sql`(current_timestamp)`),
+	comment_id: int("id").primaryKey({ autoIncrement: true }).notNull(),
+	name: text("name").notNull(),
+	job: text("job"), // Opcional
+	description: text("description").notNull(),
+	direction: text("direction").notNull(),
+	country_flag: text("country_flag").notNull(),
+	country: text("country").notNull(),
+	status: text("status", { enum: COMMENT_STATUSES })
+		.notNull()
+		.default("pending"),
+	...timestamps,
 });
 
-// Schema para insertar (sin comment_id ya que es autoincremental)
 export const insertCommentsSchema = createInsertSchema(comments, {
 	name: z
 		.string()
@@ -31,16 +33,23 @@ export const insertCommentsSchema = createInsertSchema(comments, {
 	}),
 	country_flag: z.string(),
 	country: z.string(),
-	created_at: z.date().default(() => new Date()),
-}).omit({ comment_id: true });
+	status: z.enum(COMMENT_STATUSES),
+}).omit({ comment_id: true, created_at: true, updated_at: true });
 
-// Schema para el input del usuario (sin direction porque se calcula automáticamente)
-export const userInputSchema = insertCommentsSchema.omit({ direction: true });
+export const userInputSchema = insertCommentsSchema.omit({
+	direction: true,
+	status: true,
+});
 
-// Schema para seleccionar (incluye comment_id)
 export const selectCommentsSchema = createSelectSchema(comments);
 
-// Tipos TypeScript derivados de los schemas
+export const updateCommentStatusSchema = z.object({
+	status: z.enum(COMMENT_STATUSES),
+});
+
 export type InsertComment = z.infer<typeof insertCommentsSchema>;
 export type UserInputComment = z.infer<typeof userInputSchema>;
 export type SelectComment = z.infer<typeof selectCommentsSchema>;
+export type UpdateCommentStatusInput = z.infer<
+	typeof updateCommentStatusSchema
+>;

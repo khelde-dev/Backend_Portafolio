@@ -1,25 +1,19 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { Context, Next } from "hono";
 
-const logFilePath = path.join(process.cwd(), "src/logs", "app.log");
-
+// Log a consola, no a archivo. Este backend corre como funcion serverless
+// en Vercel (confirmado: .vercel/project.json enlazado, sin server.listen
+// propio) - el filesystem ahi es de solo lectura en produccion, escribir a
+// src/logs/*.log con fs.appendFile nunca funciono en produccion, solo en
+// local (el catch silencioso lo escondia). Vercel captura stdout/stderr
+// nativamente en el dashboard de Functions - ese es el sink real.
 export const customLogger = async (c: Context, next: Next) => {
 	const start = Date.now();
 
 	await next();
 
 	const ms = Date.now() - start;
-	const log = `[${new Date().toISOString()}] ${c.req.method} ${c.req.url} ${
-		c.res.status
-	} - ${ms}ms\n`;
-
-	// Guardar en archivo
-	try {
-		const logDir = path.dirname(logFilePath);
-		await fs.promises.mkdir(logDir, { recursive: true });
-		await fs.promises.appendFile(logFilePath, log);
-	} catch (logError) {
-		console.error("Failed to write to app log file:", logError);
-	}
+	const requestId = c.get("requestId") ?? "-";
+	console.log(
+		`[${new Date().toISOString()}] [${requestId}] ${c.req.method} ${c.req.url} ${c.res.status} - ${ms}ms`,
+	);
 };

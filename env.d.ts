@@ -3,7 +3,6 @@ declare namespace NodeJS {
     API_TOKEN: string;
     TURSO_DATABASE_URL: string;
     TURSO_AUTH_TOKEN: string;
-    BOT_TOKEN: string;
-    CHAT_ID: string;
+    ADMIN_JWT_SECRET: string;
   }
 }

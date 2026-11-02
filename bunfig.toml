@@ -1,0 +1,14 @@
+[test]
+# El mock de la base (tests/support/setup.ts) NO va como `preload` global:
+# las pruebas de integracion necesitan la D1 real. Los scripts de package.json
+# lo cargan solo para las pruebas unitarias y de seguridad:
+#   bun run test:unit         -> con la base falsa (rapido, sin red)
+#   bun run test:integration  -> con una D1 real en memoria (Miniflare)
+timeout = 30000
+
+# bun run test:coverage
+coverageSkipTestFiles = true
+coverageReporter = ["text", "lcov"]
+coverageDir = "coverage"
+# Pisos minimos: el CI falla si un cambio los baja.
+coverageThreshold = { line = 0.95, function = 0.9 }

@@ -24,8 +24,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# backups (PII real: nombres/emails de comentarios y contacto - nunca commitear)
+backups/
+
 # misc
 .DS_Store
 .vercel
 
 .vercel
+
+# Cloudflare / Wrangler (estado local y secretos de desarrollo)
+.wrangler/
+.dev.vars
+coverage/
