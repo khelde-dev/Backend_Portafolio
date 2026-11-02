@@ -168,6 +168,52 @@ check(
 	await json(contact),
 );
 
+// --- bandeja de contacto ---
+const unread = await json(
+	await call("/api/contact-messages/unread-count", await adminAuthed()),
+);
+check(
+	"unread-count cuenta el mensaje nuevo",
+	(unread.data?.unread ?? 0) >= 1,
+	unread,
+);
+const inbox = await json(
+	await call("/api/contact-messages?status=unread", await adminAuthed()),
+);
+const mineMsg = (inbox.data as any[] | undefined)?.find(
+	(m) => m.email === "ana@example.com",
+);
+check(
+	"?status=unread lo trae, con more_information nulo",
+	mineMsg && mineMsg.more_information === null,
+	mineMsg,
+);
+const read = await call(
+	`/api/contact-messages/${mineMsg?.message_id}`,
+	await adminAuthed({
+		method: "PUT",
+		body: JSON.stringify({ status: "replied" }),
+	}),
+);
+const readBody = await json(read);
+check(
+	"marcar replied guarda replied_at",
+	read.status === 200 && !!readBody.data?.replied_at,
+	readBody,
+);
+const afterRead = await json(
+	await call("/api/contact-messages?status=unread", await adminAuthed()),
+);
+check(
+	"ya no sale en los sin leer",
+	!(afterRead.data as any[]).some((m) => m.message_id === mineMsg?.message_id),
+);
+const gone = await call(
+	`/api/contact-messages/${mineMsg?.message_id}`,
+	await adminAuthed({ method: "DELETE" }),
+);
+check("DELETE /api/contact-messages/:id", gone.status === 200, gone.status);
+
 await proxy.dispose();
 console.log(failures === 0 ? "\nTodo bien." : `\n${failures} fallo(s).`);
 process.exit(failures === 0 ? 0 : 1);

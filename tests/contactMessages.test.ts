@@ -178,3 +178,99 @@ describe("PUT /api/contact-messages/:id", () => {
 		expect(res.status).toBe(400);
 	});
 });
+
+describe("GET /api/contact-messages (bandeja del admin)", () => {
+	afterEach(() => {
+		setFakeDbResult([]);
+	});
+
+	it("200 con todos los mensajes", async () => {
+		setFakeDbResult([{ message_id: 2 }, { message_id: 1 }]);
+		const res = await app.request("/api/contact-messages", await adminAuthed());
+		expect(res.status).toBe(200);
+		expect((await res.json()).data).toHaveLength(2);
+	});
+
+	it("200 filtrando por estado valido", async () => {
+		setFakeDbResult([{ message_id: 2, status: "unread" }]);
+		const res = await app.request(
+			"/api/contact-messages?status=unread",
+			await adminAuthed(),
+		);
+		expect(res.status).toBe(200);
+	});
+
+	it("400 con un estado que no existe", async () => {
+		const res = await app.request(
+			"/api/contact-messages?status=archivado",
+			await adminAuthed(),
+		);
+		expect(res.status).toBe(400);
+	});
+});
+
+describe("GET /api/contact-messages/unread-count", () => {
+	afterEach(() => {
+		setFakeDbResult([]);
+	});
+
+	it("devuelve cuantos mensajes faltan por leer", async () => {
+		setFakeDbResult([{ value: 3 }]);
+		const res = await app.request(
+			"/api/contact-messages/unread-count",
+			await adminAuthed(),
+		);
+		expect(res.status).toBe(200);
+		expect((await res.json()).data).toEqual({ unread: 3 });
+	});
+
+	it("0 cuando no hay nada", async () => {
+		setFakeDbResult([]);
+		const res = await app.request(
+			"/api/contact-messages/unread-count",
+			await adminAuthed(),
+		);
+		expect((await res.json()).data).toEqual({ unread: 0 });
+	});
+
+	it("401 sin sesion de Access", async () => {
+		const res = await app.request(
+			"/api/contact-messages/unread-count",
+			authed(),
+		);
+		expect(res.status).toBe(401);
+	});
+});
+
+describe("DELETE /api/contact-messages/:id", () => {
+	afterEach(() => {
+		setFakeDbResult([]);
+	});
+
+	it("404 si el mensaje no existe", async () => {
+		setFakeDbResult([]);
+		const res = await app.request(
+			"/api/contact-messages/999",
+			await adminAuthed({ method: "DELETE" }),
+		);
+		expect(res.status).toBe(404);
+	});
+
+	it("200 y devuelve el mensaje borrado", async () => {
+		setFakeDbResult([{ message_id: 5, name: "Spam" }]);
+		const res = await app.request(
+			"/api/contact-messages/5",
+			await adminAuthed({ method: "DELETE" }),
+		);
+		expect(res.status).toBe(200);
+		expect((await res.json()).data.message_id).toBe(5);
+	});
+
+	it("401 sin sesion de Access", async () => {
+		const res = await app.request(
+			"/api/contact-messages/5",
+			authed({ method: "DELETE" }),
+		);
+		expect(res.status).toBe(401);
+	});
+});

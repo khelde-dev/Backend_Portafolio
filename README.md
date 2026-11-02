@@ -58,4 +58,4 @@ Todas bajo `/api`, todas con `Authorization: Bearer <API_TOKEN>`.
 
 - Públicas (lectura, `?currentLocale=es|en|fr`): `GET /projects`, `/experiences`, `/education`, `/skills`, `/about`, `/comments`.
 - Públicas (escritura, con límite): `POST /comments`, `POST /contact-messages`.
-- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; moderación de comentarios y bandeja de contacto.
+- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; moderación de comentarios (`GET /comments/admin`, `PUT /comments/:id`) y bandeja de contacto: `GET /contact-messages` (`?status=unread|read|replied`), `GET /contact-messages/unread-count`, `PUT /contact-messages/:id` (cambia el estado; `replied` guarda `replied_at`) y `DELETE /contact-messages/:id`.

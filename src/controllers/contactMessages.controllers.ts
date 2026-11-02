@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import type {
 	ContactMessageStatus,
 	ContactMessageUserInput,
@@ -26,16 +26,37 @@ export async function PostContactMessage(
 	return result[0];
 }
 
-// Para el admin/dashboard - protegida por adminAuth (JWT) en
-// contactMessages.routes.ts, ver docs/03-hono-admin-auth.md.
+// Bandeja de entrada del admin (protegida por Cloudflare Access en las
+// rutas). Mas reciente primero; `status` filtra (ej. solo los "unread").
 export async function GetAllContactMessages(
 	db: Db,
+	status?: ContactMessageStatus,
 ): Promise<SelectContactMessage[]> {
-	return db
-		.select()
-		.from(contactMessages)
-		.orderBy(desc(contactMessages.created_at))
+	const query = db.select().from(contactMessages);
+	return (status ? query.where(eq(contactMessages.status, status)) : query)
+		.orderBy(desc(contactMessages.created_at), desc(contactMessages.message_id))
 		.all();
+}
+
+// Para el globo de "sin leer" del menu del admin, sin bajar los mensajes.
+export async function CountUnreadContactMessages(db: Db): Promise<number> {
+	const [row] = await db
+		.select({ value: count() })
+		.from(contactMessages)
+		.where(eq(contactMessages.status, "unread"));
+	return row?.value ?? 0;
+}
+
+// Borrar un mensaje (spam).
+export async function DeleteContactMessage(
+	db: Db,
+	messageId: number,
+): Promise<SelectContactMessage | null> {
+	const [deleted] = await db
+		.delete(contactMessages)
+		.where(eq(contactMessages.message_id, messageId))
+		.returning();
+	return deleted ?? null;
 }
 
 // Marcar leido/respondido.

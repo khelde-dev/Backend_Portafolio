@@ -2,6 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import {
+	CountUnreadContactMessages,
+	DeleteContactMessage,
 	GetAllContactMessages,
 	PostContactMessage,
 	UpdateContactMessageStatus,
@@ -15,17 +17,33 @@ import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { rateLimit } from "../middleware/rateLimit.middleware.js";
 import {
 	contactMessageUserInputSchema,
+	listContactMessagesQuerySchema,
 	updateContactMessageStatusSchema,
 } from "../schemas/contactMessages.js";
 
 const router = new Hono<AppEnv>();
 
-// GET /contact-messages - bandeja de entrada del admin. Protegido por
-// JWT (docs/00-auditoria.md hallazgo 3) - registrado antes de "/:id".
-router.get("/", accessAuth, async (c) => {
-	const result = await GetAllContactMessages(c.get("db"));
+// GET /contact-messages - bandeja de entrada del admin (Cloudflare Access).
+// ?status=unread|read|replied filtra; sin parametro devuelve todos.
+router.get(
+	"/",
+	accessAuth,
+	zValidator("query", listContactMessagesQuerySchema, zodErrorHook),
+	async (c) => {
+		const { status } = c.req.valid("query");
+		const result = await GetAllContactMessages(c.get("db"), status);
+		return c.json(
+			{ success: true, data: result } as ApiResponse<typeof result>,
+			200,
+		);
+	},
+);
+
+// GET /contact-messages/unread-count - globo de "sin leer" del menu.
+router.get("/unread-count", accessAuth, async (c) => {
+	const unread = await CountUnreadContactMessages(c.get("db"));
 	return c.json(
-		{ success: true, data: result } as ApiResponse<typeof result>,
+		{ success: true, data: { unread } } as ApiResponse<{ unread: number }>,
 		200,
 	);
 });
@@ -79,5 +97,27 @@ router.put(
 		);
 	},
 );
+
+// DELETE /contact-messages/:id - borrar (spam).
+router.delete("/:id", accessAuth, async (c) => {
+	const id = parseId(c.req.param("id"));
+
+	const result = await DeleteContactMessage(c.get("db"), id);
+	if (!result) {
+		throw new HTTPException(404, { message: "Mensaje no encontrado" });
+	}
+
+	auditLog({
+		adminEmail: adminEmail(c),
+		action: "delete",
+		resource: "contact-messages",
+		resourceId: id,
+	});
+
+	return c.json(
+		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
 
 export default router;

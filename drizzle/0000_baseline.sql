@@ -29,7 +29,6 @@ CREATE TABLE `contact_messages` (
 	`phone` text NOT NULL,
 	`more_information` text,
 	`status` text DEFAULT 'unread' NOT NULL,
-	`notified_at` text,
 	`replied_at` text,
 	`created_at` text DEFAULT (current_timestamp) NOT NULL,
 	`updated_at` text DEFAULT (current_timestamp) NOT NULL

@@ -14,7 +14,6 @@ export const contactMessages = sqliteTable("contact_messages", {
 	status: text("status", { enum: CONTACT_MESSAGE_STATUSES })
 		.notNull()
 		.default("unread"),
-	notified_at: text("notified_at"),
 	replied_at: text("replied_at"),
 	...timestamps,
 });
@@ -33,7 +32,6 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages, {
 	status: z.enum(CONTACT_MESSAGE_STATUSES),
 }).omit({
 	message_id: true,
-	notified_at: true,
 	replied_at: true,
 	created_at: true,
 	updated_at: true,
@@ -44,6 +42,10 @@ export const contactMessageUserInputSchema = insertContactMessageSchema.omit({
 });
 
 export const selectContactMessageSchema = createSelectSchema(contactMessages);
+
+export const listContactMessagesQuerySchema = z.object({
+	status: z.enum(CONTACT_MESSAGE_STATUSES).optional(),
+});
 
 export const updateContactMessageStatusSchema = z.object({
 	status: z.enum(CONTACT_MESSAGE_STATUSES),

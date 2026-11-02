@@ -1,7 +1,7 @@
 {
 	"version": "6",
 	"dialect": "sqlite",
-	"id": "35698d9d-2470-49e9-9311-4d0683f62792",
+	"id": "807cfea0-ee09-4d50-934f-3f657c3a9572",
 	"prevId": "00000000-0000-0000-0000-000000000000",
 	"tables": {
 		"about": {
@@ -201,13 +201,6 @@
 					"notNull": true,
 					"autoincrement": false,
 					"default": "'unread'"
-				},
-				"notified_at": {
-					"name": "notified_at",
-					"type": "text",
-					"primaryKey": false,
-					"notNull": false,
-					"autoincrement": false
 				},
 				"replied_at": {
 					"name": "replied_at",
