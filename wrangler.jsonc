@@ -1,7 +1,7 @@
 {
 	// Cloudflare Worker del API (Hono). Despliegue: `bun run deploy`.
 	// Antes de la primera vez hay que crear los recursos y pegar sus ids:
-	//   bunx wrangler d1 create portafolio-db        -> database_id
+	//   (D1 portafolio-db y bucket R2 "portfolio" ya creados)
 	//   (el bucket R2 "portfolio" ya existe)
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "backend-portafolio",
@@ -14,7 +14,7 @@
 		{
 			"binding": "DB",
 			"database_name": "portafolio-db",
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_id": "fa866883-6b13-4c40-9f60-ccc7273fb72c",
 			"migrations_dir": "drizzle"
 		}
 	],
