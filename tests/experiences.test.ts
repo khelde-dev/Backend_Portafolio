@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import app from "../src/index.js";
-import { adminAuthed, authed } from "./helpers.js";
+import { adminAuthed, app, authed } from "./helpers.js";
 import { setFakeDbResult } from "./mocks/fakeDb.js";
 
 describe("GET /api/experiences", () => {

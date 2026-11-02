@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import app from "../src/index.js";
-import { adminAuthed, authed, uniqueIp } from "./helpers.js";
+import { adminAuthed, app, authed, uniqueIp } from "./helpers.js";
 import {
 	getLastInsertValues,
 	getLastUpdateValues,
