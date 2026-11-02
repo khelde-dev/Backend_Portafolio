@@ -10,7 +10,7 @@
 import { getPlatformProxy } from "wrangler";
 import type { Bindings } from "../src/env.js";
 import app from "../src/index.js";
-import { adminAuthed, authed, TEST_ENV } from "../tests/helpers.js";
+import { adminAuthed, authed, TEST_ENV } from "../tests/support/helpers.js";
 
 const proxy = await getPlatformProxy<Pick<Bindings, "DB" | "MEDIA">>({
 	configPath: "wrangler.jsonc",

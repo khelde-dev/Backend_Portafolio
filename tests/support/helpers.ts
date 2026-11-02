@@ -1,5 +1,5 @@
-import type { Bindings } from "../src/env.js";
-import realApp from "../src/index.js";
+import type { Bindings } from "../../src/env.js";
+import realApp from "../../src/index.js";
 
 /**
  * Utilidades compartidas por los archivos de test. La app ahora recibe sus
@@ -10,7 +10,7 @@ import realApp from "../src/index.js";
 export const TOKEN = "test-api-token";
 export const ACCESS_AUD = "test-access-aud";
 export const ACCESS_TEAM = "https://test-team.cloudflareaccess.com";
-const KEY_ID = "test-key-1";
+export const KEY_ID = "test-key-1";
 
 // Par de llaves RSA de usar y tirar: Cloudflare Access firma con RS256 y el
 // Worker verifica contra las llaves publicas (aqui entregadas por ACCESS_JWKS).
@@ -24,9 +24,9 @@ const pair = await crypto.subtle.generateKey(
 	true,
 	["sign", "verify"],
 );
-const publicJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+export const publicJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
 
-const b64url = (input: string | ArrayBuffer): string => {
+export const b64url = (input: string | ArrayBuffer): string => {
 	const bytes =
 		typeof input === "string"
 			? new TextEncoder().encode(input)

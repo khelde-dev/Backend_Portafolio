@@ -40,12 +40,17 @@ Convierte el respaldo (un JSON por tabla) al esquema nuevo y mete las traduccion
 ```bash
 bun run db:migrate:local   # D1 local (Miniflare)
 bun run dev                # wrangler dev
-bun test                   # pruebas (base falsa, sin red)
+bun run test               # unitarias + seguridad + propiedades + integración
+bun run test:unit          # rápidas, con base falsa y sin red
+bun run test:integration   # D1 real en memoria (Miniflare)
+bun run ci                 # lo mismo que corre GitHub Actions
 bun run smoke:d1           # prueba de humo contra el D1 local real
 bun run typecheck
 ```
 
 Para llamar a las rutas del CMS en local, `wrangler dev` no pasa por Access: usa `ACCESS_JWKS` (llaves públicas) en `.dev.vars` y un JWT firmado con la llave privada correspondiente.
+
+Servidor local: `http://127.0.0.1:8787/api`. `wrangler dev` no lee los secretos del Worker desplegado: pon tu `API_TOKEN` de desarrollo en `.dev.vars` (ignorado por git) y el mismo valor en `API_SECRET_TOKEN` del portafolio. Detalle de las pruebas y del CI en [docs/07-testing-y-ci.md](docs/07-testing-y-ci.md).
 
 ## Migraciones
 
