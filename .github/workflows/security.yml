@@ -22,7 +22,7 @@ permissions:
 jobs:
   codeql:
     name: CodeQL
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -41,7 +41,7 @@ jobs:
 
   secrets:
     name: Escaneo de secretos (gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -55,7 +55,7 @@ jobs:
   dependency-review:
     name: Revisión de dependencias nuevas
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -67,7 +67,7 @@ jobs:
   audit:
     name: Auditoría semanal de dependencias
     if: ${{ github.event_name == 'schedule' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7

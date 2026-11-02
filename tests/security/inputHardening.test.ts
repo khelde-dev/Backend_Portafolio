@@ -29,7 +29,13 @@ const post = async (body: unknown, raw = false) =>
 		}),
 	);
 
-beforeEach(() => setFakeDbResult([{ project_id: 1, ...validProject }]));
+// El historial del doble de base es compartido por TODOS los archivos de
+// prueba: se vacia tambien antes de cada test, porque segun el orden en que el
+// runner cargue los archivos (distinto en Linux) llegan inserts de otro archivo.
+beforeEach(() => {
+	resetFakeDbCalls();
+	setFakeDbResult([{ project_id: 1, ...validProject }]);
+});
 afterEach(() => resetFakeDbCalls());
 
 const expectRejectedBeforeDb = async (
