@@ -36,7 +36,7 @@
 		"@hono/zod-validator": "^0.9.1",
 		"drizzle-orm": "^0.45.2",
 		"drizzle-zod": "^0.8.3",
-		"hono": "^4.13.7",
+		"hono": "^4.13.16",
 		"husky": "9.1.7",
 		"zod": "^4.6.7"
 	},
@@ -46,12 +46,13 @@
 		"@libsql/client": "^0.18.0",
 		"@types/bun": "^1.4.2",
 		"@types/node": "^20.11.17",
-		"drizzle-kit": "^0.31.10",
+		"drizzle-kit": "^0.31.11",
 		"fast-check": "^4.10.2",
 		"typescript": "^5.8.3",
 		"wrangler": "^4.156.1"
 	},
 	"overrides": {
-		"ws": ">=8.20.1"
+		"ws": ">=8.20.1",
+		"esbuild": ">=0.25.0"
 	}
 }
