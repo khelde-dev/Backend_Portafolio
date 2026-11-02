@@ -1,29 +1,29 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import type { JwtVariables } from "hono/jwt";
 import {
 	GetAllComments,
 	GetAllCommentsAdmin,
 	PostComments,
 	UpdateCommentStatus,
 } from "../controllers/comments.controllers.js";
+import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
 import { parseId } from "../lib/parseId.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
-import { adminAuth } from "../middleware/adminAuth.middleware.js";
+import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { rateLimit } from "../middleware/rateLimit.middleware.js";
 import {
 	updateCommentStatusSchema,
 	userInputSchema,
 } from "../schemas/comments.js";
 
-const router = new Hono<{ Variables: JwtVariables }>();
+const router = new Hono<AppEnv>();
 
 // GET /comments - Obtener todos los comentarios (solo "published")
 router.get("/", async (c) => {
-	const result = await GetAllComments();
+	const result = await GetAllComments(c.get("db"));
 	return c.json(
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
@@ -33,8 +33,8 @@ router.get("/", async (c) => {
 // GET /comments/admin - todos los estados, incluido "pending". Protegido
 // por JWT (docs/00-auditoria.md hallazgo 3) - registrado antes de
 // "/:id" para que no lo intercepte como si "admin" fuera un id.
-router.get("/admin", adminAuth, async (c) => {
-	const result = await GetAllCommentsAdmin();
+router.get("/admin", accessAuth, async (c) => {
+	const result = await GetAllCommentsAdmin(c.get("db"));
 	return c.json(
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
@@ -51,7 +51,7 @@ router.post(
 	async (c) => {
 		const data = c.req.valid("json");
 
-		const result = await PostComments(data);
+		const result = await PostComments(c.get("db"), data);
 		return c.json(
 			{
 				success: true,
@@ -66,20 +66,19 @@ router.post(
 // PUT /comments/:id - aprobar/ocultar. Protegido por JWT.
 router.put(
 	"/:id",
-	adminAuth,
+	accessAuth,
 	zValidator("json", updateCommentStatusSchema, zodErrorHook),
 	async (c) => {
 		const id = parseId(c.req.param("id"));
 
 		const { status } = c.req.valid("json");
-		const result = await UpdateCommentStatus(id, status);
+		const result = await UpdateCommentStatus(c.get("db"), id, status);
 		if (!result) {
 			throw new HTTPException(404, { message: "Comentario no encontrado" });
 		}
 
-		const { email } = c.get("jwtPayload");
 		auditLog({
-			adminEmail: email,
+			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "comments",
 			resourceId: id,

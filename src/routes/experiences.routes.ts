@@ -1,27 +1,37 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import type { JwtVariables } from "hono/jwt";
-import type { LanguageVariables } from "hono/language";
 import {
 	CreateExperience,
 	DeleteExperience,
 	GetAllExperiences,
+	GetAllExperiencesAdmin,
 	UpdateExperience,
 } from "../controllers/experiences.controllers.js";
+import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
 import { parseId } from "../lib/parseId.js";
 import { requireLocale } from "../lib/requireLocale.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
-import { adminAuth } from "../middleware/adminAuth.middleware.js";
+import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { experienceAdminInputSchema } from "../schemas/experiences.js";
 
-const router = new Hono<{ Variables: JwtVariables & LanguageVariables }>();
+const router = new Hono<AppEnv>();
 
 router.get("/", async (c) => {
 	const currentLocale = requireLocale(c);
-	const result = await GetAllExperiences({ currentLocale });
+	const result = await GetAllExperiences(c.get("db"), { currentLocale });
+	return c.json(
+		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
+
+// GET /experiences/admin - para el CMS: incluye borradores y todas las traducciones.
+// Protegido por Cloudflare Access; registrado antes de "/:id".
+router.get("/admin", accessAuth, async (c) => {
+	const result = await GetAllExperiencesAdmin(c.get("db"));
 	return c.json(
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
@@ -31,15 +41,14 @@ router.get("/", async (c) => {
 // POST /experiences - crear. Protegido por JWT.
 router.post(
 	"/",
-	adminAuth,
+	accessAuth,
 	zValidator("json", experienceAdminInputSchema, zodErrorHook),
 	async (c) => {
 		const data = c.req.valid("json");
-		const result = await CreateExperience(data);
+		const result = await CreateExperience(c.get("db"), data);
 
-		const { email } = c.get("jwtPayload");
 		auditLog({
-			adminEmail: email,
+			adminEmail: adminEmail(c),
 			action: "create",
 			resource: "experiences",
 			resourceId: result.experience_id,
@@ -59,20 +68,19 @@ router.post(
 // PUT /experiences/:id - reemplazo completo (incluye traducciones).
 router.put(
 	"/:id",
-	adminAuth,
+	accessAuth,
 	zValidator("json", experienceAdminInputSchema, zodErrorHook),
 	async (c) => {
 		const id = parseId(c.req.param("id"));
 
 		const data = c.req.valid("json");
-		const result = await UpdateExperience(id, data);
+		const result = await UpdateExperience(c.get("db"), id, data);
 		if (!result) {
 			throw new HTTPException(404, { message: "Experiencia no encontrada" });
 		}
 
-		const { email } = c.get("jwtPayload");
 		auditLog({
-			adminEmail: email,
+			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "experiences",
 			resourceId: id,
@@ -87,17 +95,16 @@ router.put(
 
 // DELETE /experiences/:id - cascada real a experience_translations
 // (verificado: foreign_keys ON en esta conexion).
-router.delete("/:id", adminAuth, async (c) => {
+router.delete("/:id", accessAuth, async (c) => {
 	const id = parseId(c.req.param("id"));
 
-	const result = await DeleteExperience(id);
+	const result = await DeleteExperience(c.get("db"), id);
 	if (!result) {
 		throw new HTTPException(404, { message: "Experiencia no encontrada" });
 	}
 
-	const { email } = c.get("jwtPayload");
 	auditLog({
-		adminEmail: email,
+		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "experiences",
 		resourceId: id,
