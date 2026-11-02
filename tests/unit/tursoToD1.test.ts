@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildImportSql } from "../scripts/tursoToD1.js";
+import { buildImportSql } from "../../scripts/tursoToD1.js";
 
 describe("buildImportSql (respaldo de Turso a D1)", () => {
 	const sql = buildImportSql({

@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
-import { adminAuthed, app, authed, uniqueIp } from "./helpers.js";
 import {
 	getLastInsertValues,
 	getLastUpdateValues,
 	setFakeDbResult,
-} from "./mocks/fakeDb.js";
+} from "../support/fakeDb.js";
+import { adminAuthed, app, authed, uniqueIp } from "../support/helpers.js";
 
 describe("POST /api/contact-messages", () => {
 	afterEach(() => {

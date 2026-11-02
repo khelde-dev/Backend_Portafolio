@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { accessJwt, app, authed } from "./helpers.js";
-import { resetFakeDbCalls, setFakeDbResult } from "./mocks/fakeDb.js";
+import { resetFakeDbCalls, setFakeDbResult } from "../support/fakeDb.js";
+import { accessJwt, app, authed } from "../support/helpers.js";
 
 const ADMIN_LIST = "/api/projects/admin";
 

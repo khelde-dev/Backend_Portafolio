@@ -2,6 +2,7 @@ import { int, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { CATEGORIES, LOCALES, PROJECT_STATUSES } from "../lib/constants.js";
 import { hasDuplicateLocales } from "../lib/translations.js";
+import { httpUrl, r2Key } from "../lib/validators.js";
 import { timestamps, translationsColumn } from "./common.js";
 
 /**
@@ -47,6 +48,7 @@ export const projectAdminInputSchema = z.object({
 	slug: z
 		.string()
 		.min(1, "El slug es requerido")
+		.max(100, "El slug es muy largo")
 		.regex(
 			/^[a-z0-9]+(?:-[a-z0-9]+)*$/,
 			"Slug invalido (minusculas y guiones)",
@@ -55,12 +57,12 @@ export const projectAdminInputSchema = z.object({
 	status: z.enum(PROJECT_STATUSES).default("published"),
 	featured: z.boolean().default(false),
 	sort_order: z.number().int().default(0),
-	card_image: z.string().min(1, "La imagen es requerida"),
-	gallery: z.array(z.string().min(1)).default([]),
-	video_url: z.url("URL invalida").optional().nullable(),
+	card_image: r2Key(),
+	gallery: z.array(r2Key()).max(50).default([]),
+	video_url: httpUrl().optional().nullable(),
 	images_topics: z.array(z.string()).default([]),
-	link_repo: z.url("URL invalida").optional().nullable(),
-	link_web: z.url("URL invalida").optional().nullable(),
+	link_repo: httpUrl().optional().nullable(),
+	link_web: httpUrl().optional().nullable(),
 	fork: z.boolean().default(false),
 	title_default: z.string().min(1, "El titulo default es requerido"),
 	summary_default: z.string().min(1, "El resumen default es requerido"),

@@ -4,9 +4,9 @@ import {
 	parseJson,
 	toTranslationMap,
 	translationFor,
-} from "../src/lib/translations.js";
-import { app, authed } from "./helpers.js";
-import { resetFakeDbCalls, setFakeDbResult } from "./mocks/fakeDb.js";
+} from "../../src/lib/translations.js";
+import { resetFakeDbCalls, setFakeDbResult } from "../support/fakeDb.js";
+import { app, authed } from "../support/helpers.js";
 
 describe("lib/translations", () => {
 	it("parseJson devuelve el respaldo ante vacio o JSON roto", () => {

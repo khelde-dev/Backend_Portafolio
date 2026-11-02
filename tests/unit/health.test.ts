@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { app, authed } from "./helpers.js";
-import { setFakeDbResult } from "./mocks/fakeDb.js";
+import { setFakeDbResult } from "../support/fakeDb.js";
+import { app, authed } from "../support/helpers.js";
 
 describe("GET /api (health check)", () => {
 	it("es publico, sin bearer token", async () => {

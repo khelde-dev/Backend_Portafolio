@@ -20,10 +20,16 @@ const PUBLIC_COLUMNS = {
 	status: comments.status,
 } as const;
 
-const toDateOnly = <T extends { created_at: string }>(comment: T) => ({
-	...comment,
-	created_at: new Date(comment.created_at).toISOString().slice(0, 10),
-});
+// Una fecha danada en la base no debe tumbar la lista completa (500).
+const toDateOnly = <T extends { created_at: string }>(comment: T) => {
+	const date = new Date(comment.created_at);
+	return {
+		...comment,
+		created_at: Number.isNaN(date.getTime())
+			? String(comment.created_at).slice(0, 10)
+			: date.toISOString().slice(0, 10),
+	};
+};
 
 // Lectura publica: SOLO comentarios ya aprobados. Un comentario nuevo del
 // publico nace "pending" (ver PostComments abajo) y no aparece aqui hasta

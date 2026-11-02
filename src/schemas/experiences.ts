@@ -2,6 +2,7 @@ import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { LOCALES } from "../lib/constants.js";
 import { hasDuplicateLocales } from "../lib/translations.js";
+import { r2Key } from "../lib/validators.js";
 import { timestamps, translationsColumn } from "./common.js";
 
 export const experience = sqliteTable("experience", {
@@ -32,7 +33,7 @@ export const experienceAdminInputSchema = z.object({
 	work_default: z.string().max(100).optional().nullable(),
 	title_default: z.string().min(1, "El titulo default es requerido"),
 	subtitle_default: z.string().min(1, "El subtitulo default es requerido"),
-	img: z.string().min(1, "La imagen es requerida"),
+	img: r2Key(),
 	alt: z.string().min(1, "El alt es requerido"),
 	time_default: z.string().min(1, "El tiempo default es requerido"),
 	location_default: z.string().min(1, "La ubicacion default es requerida"),
