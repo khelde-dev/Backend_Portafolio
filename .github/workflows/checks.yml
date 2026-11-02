@@ -1,0 +1,127 @@
+# Pasos compartidos por los pipelines de dev y de main (workflow reutilizable).
+# Corre en un runner estándar de Ubuntu: un Worker no necesita contenedores,
+# servicios ni credenciales de Cloudflare para validarse (la D1 de las pruebas
+# de integración es Miniflare, en memoria).
+name: Checks
+
+on:
+  workflow_call:
+    inputs:
+      strict-audit:
+        description: "Falla si hay dependencias con vulnerabilidades altas o críticas"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, tipos y migraciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      - name: Lint y formato (Biome, sin escribir)
+        run: bun run lint:ci
+
+      - name: Tipos (tsc)
+        run: bun run typecheck
+
+      # Si el esquema de Drizzle cambió y nadie generó la migración, el diff
+      # no queda vacío y el job falla.
+      - name: Migraciones al día con el esquema
+        run: bun run db:drift
+
+  unit:
+    name: Unitarias, seguridad y propiedades
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      # Con cobertura: bunfig.toml define los pisos mínimos y el job falla si
+      # un cambio los baja.
+      - name: Pruebas y cobertura
+        run: bun run test:coverage
+
+      - name: Subir el reporte de cobertura
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  integration:
+    name: Integración (D1 real en memoria)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      # Aplica las migraciones reales sobre SQLite (Miniflare) y ejercita la
+      # app completa: CRUD, 409 por slug, inyección SQL, carreras.
+      - name: Pruebas de integración
+        run: bun run test:integration
+
+  build:
+    name: Empaquetado del Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      # `wrangler deploy --dry-run` empaqueta el Worker igual que el deploy
+      # real, sin credenciales ni publicar nada.
+      - name: Empaquetar (dry-run)
+        run: bun run build:check
+
+  audit:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # En dev solo informa (un CVE nuevo no debe bloquear un PR ajeno); en
+    # main es obligatorio.
+    continue-on-error: ${{ !inputs.strict-audit }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      - name: bun audit (altas y críticas)
+        run: bun run audit

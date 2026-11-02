@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { adminAuthed, app, authed, uniqueIp } from "./helpers.js";
 import {
 	getLastInsertValues,
 	getLastUpdateValues,
 	setFakeDbResult,
-} from "./mocks/fakeDb.js";
+} from "../support/fakeDb.js";
+import { adminAuthed, app, authed, uniqueIp } from "../support/helpers.js";
 
 describe("GET /api/comments", () => {
 	it("devuelve los comentarios del doble de db en el shape ApiResponse", async () => {

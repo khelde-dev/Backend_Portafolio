@@ -10,9 +10,9 @@ import { HTTPException } from "hono/http-exception";
  * experiences.routes.ts.
  */
 export const parseId = (raw: string): number => {
-	const id = Number(raw);
-	if (!Number.isInteger(id)) {
+	// Solo enteros positivos en decimal: Number() aceptaria "1e3", "0x10", " 1" o "".
+	if (!/^[1-9][0-9]{0,14}$/.test(raw)) {
 		throw new HTTPException(400, { message: "id invalido" });
 	}
-	return id;
+	return Number(raw);
 };

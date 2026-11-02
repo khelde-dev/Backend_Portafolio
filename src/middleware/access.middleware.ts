@@ -45,6 +45,8 @@ export const accessAuth = createMiddleware<AppEnv>(async (c, next) => {
 			// Las llaves publicas cambian rara vez: que Cloudflare las guarde en cache.
 			{ cf: { cacheTtl: 3600, cacheEverything: true } } as RequestInit,
 		);
+		// Access siempre firma con expiracion; un token sin `exp` nunca caducaria.
+		if (typeof payload.exp !== "number") throw new Error("token sin exp");
 		c.set("jwtPayload", payload);
 	} catch {
 		throw new HTTPException(401, { message: "Sesion de Access invalida" });

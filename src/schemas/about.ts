@@ -2,6 +2,7 @@ import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { LOCALES } from "../lib/constants.js";
 import { hasDuplicateLocales } from "../lib/translations.js";
+import { r2Key } from "../lib/validators.js";
 import { timestamps, translationsColumn } from "./common.js";
 
 /** Singleton: siempre id = 1. */
@@ -23,7 +24,7 @@ const aboutTranslationInputSchema = z.object({
 });
 
 export const aboutAdminInputSchema = z.object({
-	image: z.string().min(1, "La imagen es requerida"),
+	image: r2Key(),
 	title_card_default: z
 		.string()
 		.min(1, "El titulo de la tarjeta default es requerido"),

@@ -19,7 +19,16 @@
 // biome-ignore lint/suspicious/noExplicitAny: doble generico deliberado, ver comentario del modulo
 type Chainable = any;
 
-const state: { current: unknown } = { current: [] };
+const state: { current: unknown; error: unknown } = {
+	current: [],
+	error: null,
+};
+
+// Hace que la siguiente consulta falle (para probar el manejo de errores
+// internos sin necesitar una base rota). `null` lo desactiva.
+export const setFakeDbError = (error: unknown): void => {
+	state.error = error;
+};
 
 // Historial completo de llamadas a `.values(...)`/`.set(...)`, no solo la
 // ultima - un controller como CreateProject hace DOS inserts en la misma
@@ -54,7 +63,11 @@ const chainable = (): Chainable => {
 	return new Proxy(target, {
 		get(_t, prop) {
 			if (prop === "then") {
-				return (resolve: (v: unknown) => void) => resolve(state.current);
+				return (
+					resolve: (v: unknown) => void,
+					reject?: (e: unknown) => void,
+				) =>
+					state.error && reject ? reject(state.error) : resolve(state.current);
 			}
 			if (prop === "values") {
 				return (arg: unknown) => {

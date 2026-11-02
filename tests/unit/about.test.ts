@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { adminAuthed, app, authed } from "./helpers.js";
-import { resetFakeDbCalls, setFakeDbResult } from "./mocks/fakeDb.js";
+import { resetFakeDbCalls, setFakeDbResult } from "../support/fakeDb.js";
+import { adminAuthed, app, authed } from "../support/helpers.js";
 
 const VALID_BODY = {
-	image: "/test.webp",
+	image: "test.webp",
 	title_card_default: "Titulo",
 	subtitle_default: "Subtitulo",
 	description_default: "Descripcion",
@@ -22,7 +22,7 @@ describe("GET /api/about", () => {
 	});
 
 	it("200 con currentLocale valido", async () => {
-		setFakeDbResult([{ about_id: 1, image: "/test.webp" }]);
+		setFakeDbResult([{ about_id: 1, image: "test.webp" }]);
 		const res = await app.request("/api/about?currentLocale=es", authed());
 		expect(res.status).toBe(200);
 	});

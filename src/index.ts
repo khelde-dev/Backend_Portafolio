@@ -16,7 +16,10 @@ import {
 	csrfMiddleware,
 } from "./middleware/cors.middleware.js";
 import { dbMiddleware } from "./middleware/db.middleware.js";
-import { errorHandler } from "./middleware/errorHandler.middleware.js";
+import {
+	errorHandler,
+	notFoundHandler,
+} from "./middleware/errorHandler.middleware.js";
 import { customLogger } from "./middleware/logger.middleware.js";
 import about from "./routes/about.routes.js";
 import comments from "./routes/comments.routes.js";
@@ -32,10 +35,12 @@ const app = new Hono<AppEnv>().basePath("/api");
 
 // --- Middlewares globales, en orden (modelo onion de Hono) ---
 app.use("*", requestId());
-// customLogger antes que errorHandler: asi errorHandler absorbe cualquier
-// excepcion y el log de acceso siempre ve el status final real.
 app.use("*", customLogger);
-app.use("*", errorHandler);
+
+// Toda excepcion (HTTPException o no) y toda ruta inexistente responden con
+// el mismo JSON { success, message }; el detalle interno solo va al log.
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 app.use("*", trimTrailingSlash());
 app.use("*", secureHeaders());

@@ -18,9 +18,19 @@
 		"lint": "bunx biome lint --write ./src ./tests ./scripts",
 		"check": "bunx biome check --write ./src ./tests ./scripts",
 		"typecheck": "tsc --noEmit",
-		"test": "bun test",
+		"test": "bun run test:unit && bun run test:integration",
+		"test:unit": "bun test --preload ./tests/support/setup.ts tests/unit tests/security tests/property",
+		"test:security": "bun test --preload ./tests/support/setup.ts tests/security",
+		"test:property": "bun test --preload ./tests/support/setup.ts tests/property",
+		"test:integration": "bun test tests/integration",
+		"test:coverage": "bun test --preload ./tests/support/setup.ts --coverage tests/unit tests/security tests/property",
 		"prepare": "husky",
-		"smoke:d1": "bun run scripts/smoke-d1.ts"
+		"smoke:d1": "bun run scripts/smoke-d1.ts",
+		"lint:ci": "biome ci ./src ./tests ./scripts",
+		"build:check": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
+		"db:drift": "drizzle-kit generate && git diff --exit-code -- drizzle",
+		"audit": "bun audit --audit-level=high",
+		"ci": "bun run lint:ci && bun run typecheck && bun run test:coverage && bun run test:integration && bun run build:check"
 	},
 	"dependencies": {
 		"@hono/zod-validator": "^0.9.1",
@@ -28,7 +38,7 @@
 		"drizzle-zod": "^0.8.3",
 		"hono": "^4.13.7",
 		"husky": "9.1.7",
-		"zod": "^4.6.5"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.3",
@@ -37,6 +47,7 @@
 		"@types/bun": "^1.4.2",
 		"@types/node": "^20.11.17",
 		"drizzle-kit": "^0.31.10",
+		"fast-check": "^4.10.2",
 		"typescript": "^5.8.3",
 		"wrangler": "^4.156.1"
 	},

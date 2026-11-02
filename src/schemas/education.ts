@@ -2,6 +2,7 @@ import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { LOCALES } from "../lib/constants.js";
 import { hasDuplicateLocales } from "../lib/translations.js";
+import { r2Key } from "../lib/validators.js";
 import { timestamps, translationsColumn } from "./common.js";
 
 export const education = sqliteTable("education", {
@@ -29,7 +30,7 @@ export const educationAdminInputSchema = z.object({
 	institution_default: z.string().min(1, "La institucion default es requerida"),
 	subtitle_default: z.string().min(1, "El subtitulo default es requerido"),
 	description_default: z.string().min(1, "La descripcion default es requerida"),
-	image: z.string().min(1, "La imagen es requerida"),
+	image: r2Key(),
 	period_default: z.string().min(1, "El periodo default es requerido"),
 	translations: z
 		.array(educationTranslationInputSchema)

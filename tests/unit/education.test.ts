@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { adminAuthed, app, authed } from "./helpers.js";
-import { resetFakeDbCalls, setFakeDbResult } from "./mocks/fakeDb.js";
+import { resetFakeDbCalls, setFakeDbResult } from "../support/fakeDb.js";
+import { adminAuthed, app, authed } from "../support/helpers.js";
 
 const VALID_BODY = {
 	institution_default: "Universidad de Prueba",
 	subtitle_default: "Ingenieria",
 	description_default: "Descripcion",
-	image: "/test.webp",
+	image: "test.webp",
 	period_default: "2020 - 2024",
 	translations: [
 		{

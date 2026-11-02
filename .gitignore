@@ -36,3 +36,4 @@ backups/
 # Cloudflare / Wrangler (estado local y secretos de desarrollo)
 .wrangler/
 .dev.vars
+coverage/

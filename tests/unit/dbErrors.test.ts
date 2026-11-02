@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { isUniqueViolation } from "../src/lib/dbErrors.js";
+import { isUniqueViolation } from "../../src/lib/dbErrors.js";
 
 describe("isUniqueViolation", () => {
 	it("reconoce el error directo del driver", () => {
