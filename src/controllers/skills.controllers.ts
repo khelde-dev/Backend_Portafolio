@@ -1,90 +1,85 @@
-import { and, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { Lang, SkillAdminInput } from "../interfaces/interfaces.js";
-import { db } from "../lib/db.js";
-import { skills, skillTranslations } from "../schemas/skills.js";
+import type { Db } from "../lib/db.js";
+import {
+	parseJson,
+	toTranslationMap,
+	translationFor,
+} from "../lib/translations.js";
+import { skills } from "../schemas/skills.js";
 
-export async function GetAllSkills({ currentLocale }: Lang) {
+type SkillRow = typeof skills.$inferSelect;
+type SkillTexts = { title: string };
+
+const toPublic = (row: SkillRow, locale: string) => {
+	const t = translationFor<SkillTexts>(row.translations, locale);
+	return {
+		skill_id: row.skill_id,
+		title: t.title ?? row.title_default,
+		images_topics: parseJson<string[]>(row.images_topics, []),
+	};
+};
+
+const toAdmin = (row: SkillRow) => ({
+	...row,
+	images_topics: parseJson<string[]>(row.images_topics, []),
+	translations: parseJson<Record<string, Partial<SkillTexts>>>(
+		row.translations,
+		{},
+	),
+});
+
+const asColumns = ({
+	translations,
+	images_topics,
+	...rest
+}: SkillAdminInput) => ({
+	...rest,
+	images_topics: JSON.stringify(images_topics),
+	translations: JSON.stringify(toTranslationMap(translations)),
+});
+
+export async function GetAllSkills(db: Db, { currentLocale }: Lang) {
 	const rows = await db
-		.select({
-			skill_id: skills.skill_id,
-			title: sql`COALESCE(${skillTranslations.title}, ${skills.title_default})`,
-			images_topics: skills.images_topics,
-		})
+		.select()
 		.from(skills)
-		.leftJoin(
-			skillTranslations,
-			and(
-				eq(skillTranslations.skill_id, skills.skill_id),
-				eq(skillTranslations.locale, currentLocale as "en" | "es" | "fr"),
-			),
-		);
-
-	return rows.map((r) => ({
-		...r,
-		images_topics: JSON.parse(r.images_topics),
-	}));
+		.orderBy(asc(skills.sort_order), asc(skills.skill_id));
+	return rows.map((r) => toPublic(r, currentLocale));
 }
 
-export async function CreateSkill(input: SkillAdminInput) {
-	const { translations, images_topics, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		const [created] = await tx
-			.insert(skills)
-			.values({ ...rest, images_topics: JSON.stringify(images_topics) })
-			.returning();
-
-		if (translations.length > 0) {
-			await tx.insert(skillTranslations).values(
-				translations.map((t) => ({
-					skill_id: created.skill_id,
-					locale: t.locale,
-					title: t.title,
-				})),
-			);
-		}
-
-		return { ...created, images_topics };
-	});
+export async function GetAllSkillsAdmin(db: Db) {
+	const rows = await db
+		.select()
+		.from(skills)
+		.orderBy(asc(skills.sort_order), asc(skills.skill_id));
+	return rows.map(toAdmin);
 }
 
-export async function UpdateSkill(skillId: number, input: SkillAdminInput) {
-	const { translations, images_topics, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		const [updated] = await tx
-			.update(skills)
-			.set({ ...rest, images_topics: JSON.stringify(images_topics) })
-			.where(eq(skills.skill_id, skillId))
-			.returning();
-
-		if (!updated) return null;
-
-		await tx
-			.delete(skillTranslations)
-			.where(eq(skillTranslations.skill_id, skillId));
-
-		if (translations.length > 0) {
-			await tx.insert(skillTranslations).values(
-				translations.map((t) => ({
-					skill_id: skillId,
-					locale: t.locale,
-					title: t.title,
-				})),
-			);
-		}
-
-		return { ...updated, images_topics };
-	});
+export async function CreateSkill(db: Db, input: SkillAdminInput) {
+	const [created] = await db
+		.insert(skills)
+		.values(asColumns(input))
+		.returning();
+	return toAdmin(created);
 }
 
-// skill_translations tiene onDelete:"cascade" y foreign_keys esta ON por
-// default en esta conexion (verificado en Fase 4b: PRAGMA foreign_keys -> 1).
-export async function DeleteSkill(skillId: number) {
-	const result = await db
+export async function UpdateSkill(
+	db: Db,
+	skillId: number,
+	input: SkillAdminInput,
+) {
+	const [updated] = await db
+		.update(skills)
+		.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
+		.where(eq(skills.skill_id, skillId))
+		.returning();
+	return updated ? toAdmin(updated) : null;
+}
+
+export async function DeleteSkill(db: Db, skillId: number) {
+	const [deleted] = await db
 		.delete(skills)
 		.where(eq(skills.skill_id, skillId))
 		.returning();
-	if (!result[0]) return null;
-	return { ...result[0], images_topics: JSON.parse(result[0].images_topics) };
+	return deleted ? toAdmin(deleted) : null;
 }

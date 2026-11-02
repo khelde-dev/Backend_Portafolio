@@ -1,0 +1,47 @@
+{
+	// Cloudflare Worker del API (Hono). Despliegue: `bun run deploy`.
+	// Antes de la primera vez hay que crear los recursos y pegar sus ids:
+	//   bunx wrangler d1 create portafolio-db        -> database_id
+	//   bunx wrangler r2 bucket create portafolio-media
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "backend-portafolio",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": { "enabled": true },
+
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "portafolio-db",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "drizzle"
+		}
+	],
+
+	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "portafolio-media" }],
+
+	// Limite de peticiones por clave (IP) para los POST publicos. En Workers
+	// cada isolate tiene su propia memoria, asi que un contador en memoria no
+	// sirve: este binding lo comparte Cloudflare.
+	"ratelimits": [
+		{
+			"name": "RL_PUBLIC_WRITE",
+			"namespace_id": "1001",
+			"simple": { "limit": 5, "period": 60 }
+		}
+	],
+
+	// Valores NO secretos. Los secretos (API_TOKEN) van con
+	// `bunx wrangler secret put API_TOKEN`.
+	"vars": {
+		// Origenes del navegador que pueden llamar al API (CORS y CSRF), separados por coma.
+		"ALLOWED_ORIGINS": "http://localhost:4321,http://localhost:4322",
+		// Cloudflare Access protege las rutas de escritura del CMS.
+		// Team domain: https://<equipo>.cloudflareaccess.com  /  AUD: "Application Audience (AUD) Tag" de la app en Access.
+		"ACCESS_TEAM_DOMAIN": "",
+		"ACCESS_AUD": "",
+		// URL publica del bucket R2 (dominio propio o r2.dev mientras se prueba).
+		"PUBLIC_MEDIA_URL": ""
+	}
+}

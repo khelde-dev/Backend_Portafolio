@@ -1,77 +1,66 @@
-import { and, eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { AboutAdminInput, Lang } from "../interfaces/interfaces.js";
-import { db } from "../lib/db.js";
-import { about, aboutTranslations } from "../schemas/about.js";
+import type { Db } from "../lib/db.js";
+import {
+	parseJson,
+	toTranslationMap,
+	translationFor,
+} from "../lib/translations.js";
+import { about } from "../schemas/about.js";
 
-// Singleton: siempre about_id=1 (ver schemas/about.ts).
+// Singleton: siempre about_id = 1 (ver schemas/about.ts).
 const ABOUT_ID = 1;
 
-export async function GetAbout({ currentLocale }: Lang) {
-	const [row] = await db
-		.select({
-			about_id: about.about_id,
-			image: about.image,
-			title_card: aboutTranslations.title_card,
-			subtitle: aboutTranslations.subtitle,
-			description: aboutTranslations.description,
-			title_card_default: about.title_card_default,
-			subtitle_default: about.subtitle_default,
-			description_default: about.description_default,
-		})
-		.from(about)
-		.leftJoin(
-			aboutTranslations,
-			and(
-				eq(aboutTranslations.about_id, about.about_id),
-				eq(aboutTranslations.locale, currentLocale as "en" | "es" | "fr"),
-			),
-		)
-		.where(eq(about.about_id, ABOUT_ID));
+type AboutRow = typeof about.$inferSelect;
+type AboutTexts = { title_card: string; subtitle: string; description: string };
 
+const toAdmin = (row: AboutRow) => ({
+	...row,
+	translations: parseJson<Record<string, Partial<AboutTexts>>>(
+		row.translations,
+		{},
+	),
+});
+
+export async function GetAbout(db: Db, { currentLocale }: Lang) {
+	const [row] = await db
+		.select()
+		.from(about)
+		.where(eq(about.about_id, ABOUT_ID));
 	if (!row) return null;
 
+	const t = translationFor<AboutTexts>(row.translations, currentLocale);
 	return {
 		about_id: row.about_id,
 		image: row.image,
-		title_card: row.title_card ?? row.title_card_default,
-		subtitle: row.subtitle ?? row.subtitle_default,
-		description: row.description ?? row.description_default,
+		title_card: t.title_card ?? row.title_card_default,
+		subtitle: t.subtitle ?? row.subtitle_default,
+		description: t.description ?? row.description_default,
 	};
 }
 
-// PUT /about - upsert (la primera escritura real crea la fila singleton
-// si scripts/seed-content.ts todavia no corrio; en el uso normal ya
-// existe y esto es un UPDATE). Reemplazo completo de traducciones, mismo
-// criterio que projects/experiences (semantica de PUT: recurso entero).
-export async function UpdateAbout(input: AboutAdminInput) {
+export async function GetAboutAdmin(db: Db) {
+	const [row] = await db
+		.select()
+		.from(about)
+		.where(eq(about.about_id, ABOUT_ID));
+	return row ? toAdmin(row) : null;
+}
+
+// Un solo upsert: crea la fila la primera vez y la reemplaza despues.
+export async function UpdateAbout(db: Db, input: AboutAdminInput) {
 	const { translations, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		await tx
-			.insert(about)
-			.values({ about_id: ABOUT_ID, ...rest })
-			.onConflictDoUpdate({ target: about.about_id, set: rest });
-
-		await tx
-			.delete(aboutTranslations)
-			.where(eq(aboutTranslations.about_id, ABOUT_ID));
-
-		if (translations.length > 0) {
-			await tx.insert(aboutTranslations).values(
-				translations.map((t) => ({
-					about_id: ABOUT_ID,
-					locale: t.locale,
-					title_card: t.title_card,
-					subtitle: t.subtitle,
-					description: t.description,
-				})),
-			);
-		}
-
-		const [updated] = await tx
-			.select()
-			.from(about)
-			.where(eq(about.about_id, ABOUT_ID));
-		return updated;
-	});
+	const values = {
+		...rest,
+		translations: JSON.stringify(toTranslationMap(translations)),
+	};
+	const [saved] = await db
+		.insert(about)
+		.values({ about_id: ABOUT_ID, ...values })
+		.onConflictDoUpdate({
+			target: about.about_id,
+			set: { ...values, updated_at: sql`current_timestamp` },
+		})
+		.returning();
+	return toAdmin(saved);
 }

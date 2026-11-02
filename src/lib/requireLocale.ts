@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
-import type { LanguageVariables } from "hono/language";
+import type { AppEnv } from "../env.js";
 
 /**
  * `?currentLocale=` sigue siendo obligatorio (un valor ausente es
@@ -14,9 +14,7 @@ import type { LanguageVariables } from "hono/language";
  * exacto y sensible a mayusculas - mas estricto de lo que hace falta
  * para un parametro de idioma.
  */
-export const requireLocale = <V extends LanguageVariables>(
-	c: Context<{ Variables: V }>,
-): string => {
+export const requireLocale = (c: Context<AppEnv>): string => {
 	if (!c.req.query("currentLocale")) {
 		throw new HTTPException(400, {
 			message: "Falta el parámetro currentLocale",
