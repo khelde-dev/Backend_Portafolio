@@ -2,7 +2,7 @@
 	// Cloudflare Worker del API (Hono). Despliegue: `bun run deploy`.
 	// Antes de la primera vez hay que crear los recursos y pegar sus ids:
 	//   bunx wrangler d1 create portafolio-db        -> database_id
-	//   bunx wrangler r2 bucket create portafolio-media
+	//   (el bucket R2 "portfolio" ya existe)
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "backend-portafolio",
 	"main": "src/index.ts",
@@ -19,7 +19,8 @@
 		}
 	],
 
-	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "portafolio-media" }],
+	// Bucket que ya existe desde 2025 (con las imagenes del portafolio).
+	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "portfolio" }],
 
 	// Limite de peticiones por clave (IP) para los POST publicos. En Workers
 	// cada isolate tiene su propia memoria, asi que un contador en memoria no
@@ -41,7 +42,7 @@
 		// Team domain: https://<equipo>.cloudflareaccess.com  /  AUD: "Application Audience (AUD) Tag" de la app en Access.
 		"ACCESS_TEAM_DOMAIN": "",
 		"ACCESS_AUD": "",
-		// URL publica del bucket R2 (dominio propio o r2.dev mientras se prueba).
-		"PUBLIC_MEDIA_URL": ""
+		// URL publica del bucket R2: r2.dev mientras se prueba; con khelde.com, un dominio propio (media.khelde.com).
+		"PUBLIC_MEDIA_URL": "https://pub-a3fda08feb4f417fa5634c34e7959461.r2.dev"
 	}
 }

@@ -7,7 +7,7 @@ API de contenido del portafolio: **Hono en un Cloudflare Worker**, base de datos
 | Pieza | Para qué |
 |---|---|
 | `DB` (D1) | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto |
-| `MEDIA` (R2) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`) |
+| `MEDIA` (R2, bucket `portfolio`) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`) |
 | `API_TOKEN` (secreto) | bearer token que usa el proxy del portafolio |
 | Cloudflare Access | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion` |
 | `RL_PUBLIC_WRITE` | límite de peticiones para los POST públicos (comentarios, contacto) |
@@ -20,7 +20,6 @@ Las traducciones (es/en/fr) viven **en la misma fila** (columna JSON `translatio
 bun install
 bunx wrangler login
 bunx wrangler d1 create portafolio-db          # pega el database_id en wrangler.jsonc
-bunx wrangler r2 bucket create portafolio-media
 bunx wrangler secret put API_TOKEN             # el mismo valor que API_SECRET_TOKEN del portafolio
 bun run db:migrate:remote                      # crea las tablas
 ```
