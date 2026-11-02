@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import app from "../src/index.js";
-import { adminAuthed, authed } from "./helpers.js";
+import { adminAuthed, app, authed } from "./helpers.js";
 import {
 	getInsertCalls,
 	resetFakeDbCalls,
@@ -76,6 +75,7 @@ describe("POST /api/projects", () => {
 					card_image: "test.webp",
 					images_topics: ["react", "typescript"],
 					title_default: "Test",
+					summary_default: "Resumen",
 					description_default: "Test description",
 					fork: false,
 					translations: [
@@ -89,15 +89,60 @@ describe("POST /api/projects", () => {
 			}),
 		);
 		expect(res.status).toBe(201);
-		// getInsertCalls()[0] es el insert de la fila principal - el
-		// segundo (si hay traducciones) es el de project_translations. Ver
-		// tests/mocks/fakeDb.ts: antes esto usaba getLastInsertValues(), que
-		// devolvia el insert de traducciones por error (el ultimo, no el
-		// que este test queria probar).
-		const [mainInsert] = getInsertCalls() as { images_topics: string }[];
-		expect(mainInsert.images_topics).toBe(
+		// Una sola escritura: las traducciones viajan en la misma fila.
+		const inserts = getInsertCalls() as {
+			images_topics: string;
+			gallery: string;
+			translations: string;
+		}[];
+		expect(inserts).toHaveLength(1);
+		expect(inserts[0].images_topics).toBe(
 			JSON.stringify(["react", "typescript"]),
 		);
+		expect(inserts[0].gallery).toBe("[]");
+		expect(JSON.parse(inserts[0].translations)).toEqual({
+			es: { title: "Prueba", description: "Descripcion de prueba" },
+		});
+	});
+
+	it("400 con un slug que no es kebab-case", async () => {
+		const res = await app.request(
+			"/api/projects",
+			await adminAuthed({
+				method: "POST",
+				body: JSON.stringify({
+					slug: "Mi Proyecto",
+					category: "frontend",
+					card_image: "a.webp",
+					title_default: "x",
+					summary_default: "x",
+					description_default: "x",
+				}),
+			}),
+		);
+		expect(res.status).toBe(400);
+	});
+
+	it("400 con el mismo idioma repetido en las traducciones", async () => {
+		const res = await app.request(
+			"/api/projects",
+			await adminAuthed({
+				method: "POST",
+				body: JSON.stringify({
+					slug: "ok",
+					category: "frontend",
+					card_image: "a.webp",
+					title_default: "x",
+					summary_default: "x",
+					description_default: "x",
+					translations: [
+						{ locale: "en", title: "a" },
+						{ locale: "en", title: "b" },
+					],
+				}),
+			}),
+		);
+		expect(res.status).toBe(400);
 	});
 });
 
@@ -120,6 +165,7 @@ describe("PUT /api/projects/:id", () => {
 					card_image: "x.webp",
 					images_topics: [],
 					title_default: "x",
+					summary_default: "x",
 					description_default: "x",
 					fork: false,
 					translations: [],
@@ -141,6 +187,7 @@ describe("PUT /api/projects/:id", () => {
 					card_image: "x.webp",
 					images_topics: [],
 					title_default: "x",
+					summary_default: "x",
 					description_default: "x",
 					fork: false,
 					translations: [],

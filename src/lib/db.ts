@@ -1,15 +1,11 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/d1";
+import type { Bindings } from "../env.js";
 
-const databaseUrl = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+/**
+ * Una conexion por peticion: en Workers la base llega como binding
+ * (`c.env.DB`), no como una URL global. Los controladores reciben el
+ * resultado de esta funcion (`c.get("db")`).
+ */
+export const createDb = (env: Pick<Bindings, "DB">) => drizzle(env.DB);
 
-if (!databaseUrl) {
-	throw new Error("TURSO_DATABASE_URL environment variable is not set.");
-}
-if (!authToken) {
-	throw new Error("TURSO_AUTH_TOKEN environment variable is not set.");
-}
-
-const client = createClient({ url: databaseUrl, authToken });
-export const db = drizzle({ client });
+export type Db = ReturnType<typeof createDb>;

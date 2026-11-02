@@ -1,132 +1,124 @@
-import { and, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
 import type { Lang, ProjectAdminInput } from "../interfaces/interfaces.js";
-import { db } from "../lib/db.js";
-import { projects, projectTranslations } from "../schemas/projects.js";
+import type { Db } from "../lib/db.js";
+import { isUniqueViolation } from "../lib/dbErrors.js";
+import {
+	parseJson,
+	toTranslationMap,
+	translationFor,
+} from "../lib/translations.js";
+import { projects } from "../schemas/projects.js";
 
-export async function GetAllProjects({ currentLocale }: Lang) {
-	const getAllProjects = await db
-		.select({
-			project_id: projects.project_id,
-			slug: projects.slug,
-			category: projects.category,
-			card_image: projects.card_image,
-			images_topics: projects.images_topics,
-			link_repo: projects.link_repo,
-			link_web: projects.link_web,
-			title: sql`COALESCE(${projectTranslations.title}, ${projects.title_default})`,
-			description: sql`COALESCE(${projectTranslations.description}, ${projects.description_default})`,
-			fork: projects.fork,
-		})
-		.from(projects)
-		.leftJoin(
-			projectTranslations,
-			and(
-				eq(projectTranslations.project_id, projects.project_id),
-				eq(projectTranslations.locale, currentLocale as "en" | "es" | "fr"),
-			),
-		);
+type ProjectRow = typeof projects.$inferSelect;
+type ProjectTexts = { title: string; summary: string; description: string };
 
-	const parsedRows = getAllProjects.map((r) => ({
-		...r,
-		images_topics: JSON.parse(r.images_topics),
-	}));
-
+// Lo que ve el sitio publico: el idioma pedido ya resuelto. `description`
+// es el texto largo ("Sobre el proyecto"); la tarjeta usa `summary`.
+const toPublic = (row: ProjectRow, locale: string) => {
+	const t = translationFor<ProjectTexts>(row.translations, locale);
 	return {
-		rows: parsedRows,
+		project_id: row.project_id,
+		slug: row.slug,
+		category: row.category,
+		card_image: row.card_image,
+		gallery: parseJson<string[]>(row.gallery, []),
+		video_url: row.video_url ?? null,
+		images_topics: parseJson<string[]>(row.images_topics, []),
+		link_repo: row.link_repo ?? null,
+		link_web: row.link_web ?? null,
+		fork: row.fork,
+		featured: row.featured,
+		title: t.title ?? row.title_default,
+		summary: t.summary ?? row.summary_default,
+		description: t.description ?? row.description_default,
 	};
+};
+
+// Lo que ve el CMS: la fila completa, con el JSON ya parseado.
+const toAdmin = (row: ProjectRow) => ({
+	...row,
+	gallery: parseJson<string[]>(row.gallery, []),
+	images_topics: parseJson<string[]>(row.images_topics, []),
+	translations: parseJson<Record<string, Partial<ProjectTexts>>>(
+		row.translations,
+		{},
+	),
+});
+
+const asColumns = (input: ProjectAdminInput) => {
+	const { translations, images_topics, gallery, ...rest } = input;
+	return {
+		...rest,
+		images_topics: JSON.stringify(images_topics),
+		gallery: JSON.stringify(gallery),
+		translations: JSON.stringify(toTranslationMap(translations)),
+	};
+};
+
+// Una escritura por recurso: D1 no tiene transacciones interactivas, y con
+// las traducciones en la misma fila no hacen falta.
+const rethrowConflict = (err: unknown): never => {
+	if (isUniqueViolation(err)) {
+		throw new HTTPException(409, {
+			message: "Ya existe un proyecto con ese slug",
+		});
+	}
+	throw err;
+};
+
+export async function GetAllProjects(db: Db, { currentLocale }: Lang) {
+	const rows = await db
+		.select()
+		.from(projects)
+		.where(eq(projects.status, "published"))
+		.orderBy(asc(projects.sort_order), asc(projects.project_id));
+
+	return { rows: rows.map((r) => toPublic(r, currentLocale)) };
 }
 
-// `projects.project_id` no es autoincrement (schema historico, ver
-// docs/04-hono-projects-experiences-crud.md) - se calcula a mano. Bajo
-// concurrencia real esto tiene una ventana de carrera (dos creates al
-// mismo tiempo podrian calcular el mismo id), aceptado a proposito: es
-// un panel de un solo admin, el riesgo real es practicamente cero. No se
-// migra el schema a autoincrement en esta fase - cambiar una PK ya
-// poblada en SQLite implica recrear la tabla entera, mas riesgo del que
-// vale la pena para este problema.
-async function nextProjectId(): Promise<number> {
-	const [{ maxId }] = await db
-		.select({ maxId: sql<number>`COALESCE(MAX(${projects.project_id}), 0)` })
-		.from(projects);
-	return maxId + 1;
+// Para el CMS: incluye borradores y todas las traducciones.
+export async function GetAllProjectsAdmin(db: Db) {
+	const rows = await db
+		.select()
+		.from(projects)
+		.orderBy(asc(projects.sort_order), asc(projects.project_id));
+	return rows.map(toAdmin);
 }
 
-export async function CreateProject(input: ProjectAdminInput) {
-	const { translations, images_topics, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		const project_id = await nextProjectId();
-
-		const [created] = await tx
+export async function CreateProject(db: Db, input: ProjectAdminInput) {
+	try {
+		const [created] = await db
 			.insert(projects)
-			.values({
-				...rest,
-				project_id,
-				images_topics: JSON.stringify(images_topics),
-			})
+			.values(asColumns(input))
 			.returning();
-
-		if (translations.length > 0) {
-			await tx.insert(projectTranslations).values(
-				translations.map((t) => ({
-					project_id,
-					locale: t.locale,
-					title: t.title,
-					description: t.description,
-				})),
-			);
-		}
-
-		return created;
-	});
+		return toAdmin(created);
+	} catch (err) {
+		return rethrowConflict(err);
+	}
 }
 
 export async function UpdateProject(
+	db: Db,
 	projectId: number,
 	input: ProjectAdminInput,
 ) {
-	const { translations, images_topics, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		const [updated] = await tx
+	try {
+		const [updated] = await db
 			.update(projects)
-			.set({ ...rest, images_topics: JSON.stringify(images_topics) })
+			.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
 			.where(eq(projects.project_id, projectId))
 			.returning();
-
-		if (!updated) return null;
-
-		// Reemplazo completo de traducciones (semantica de PUT: el admin
-		// manda el recurso entero, no un patch parcial) - borrar e insertar
-		// de nuevo es mas simple y menos propenso a bugs que reconciliar
-		// filas viejas contra nuevas fila por fila.
-		await tx
-			.delete(projectTranslations)
-			.where(eq(projectTranslations.project_id, projectId));
-
-		if (translations.length > 0) {
-			await tx.insert(projectTranslations).values(
-				translations.map((t) => ({
-					project_id: projectId,
-					locale: t.locale,
-					title: t.title,
-					description: t.description,
-				})),
-			);
-		}
-
-		return updated;
-	});
+		return updated ? toAdmin(updated) : null;
+	} catch (err) {
+		return rethrowConflict(err);
+	}
 }
 
-// project_translations tiene onDelete:"cascade" y foreign_keys esta ON
-// por default en esta conexion (verificado: PRAGMA foreign_keys -> 1) -
-// borrar el proyecto ya borra sus traducciones, no hace falta borrarlas
-// a mano primero.
-export async function DeleteProject(projectId: number) {
-	const result = await db
+export async function DeleteProject(db: Db, projectId: number) {
+	const [deleted] = await db
 		.delete(projects)
 		.where(eq(projects.project_id, projectId))
 		.returning();
-	return result[0] ?? null;
+	return deleted ? toAdmin(deleted) : null;
 }

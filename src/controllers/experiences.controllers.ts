@@ -1,101 +1,90 @@
-import { and, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { ExperienceAdminInput, Lang } from "../interfaces/interfaces.js";
-import { db } from "../lib/db.js";
-import { experience, experienceTranslations } from "../schemas/experiences.js";
+import type { Db } from "../lib/db.js";
+import {
+	parseJson,
+	toTranslationMap,
+	translationFor,
+} from "../lib/translations.js";
+import { experience } from "../schemas/experiences.js";
 
-export async function GetAllExperiences({ currentLocale }: Lang) {
-	const allExperiences = await db
-		.select({
-			experience_id: experience.experience_id,
-			work: sql`COALESCE(${experienceTranslations.work}, ${experience.work_default})`,
-			title: sql`COALESCE(${experienceTranslations.title}, ${experience.title_default})`,
-			description: sql`COALESCE(${experienceTranslations.subtitle}, ${experience.subtitle_default})`,
-			img: experience.img,
-			alt: experience.alt,
-			time: sql`COALESCE(${experienceTranslations.time}, ${experience.time_default})`,
-			location: sql`COALESCE(${experienceTranslations.location}, ${experience.location_default})`,
-		})
+type ExperienceRow = typeof experience.$inferSelect;
+type ExperienceTexts = {
+	work: string;
+	title: string;
+	subtitle: string;
+	time: string;
+	location: string;
+};
+
+const toPublic = (row: ExperienceRow, locale: string) => {
+	const t = translationFor<ExperienceTexts>(row.translations, locale);
+	return {
+		experience_id: row.experience_id,
+		work: t.work ?? row.work_default ?? null,
+		title: t.title ?? row.title_default,
+		description: t.subtitle ?? row.subtitle_default,
+		img: row.img,
+		alt: row.alt,
+		time: t.time ?? row.time_default,
+		location: t.location ?? row.location_default,
+	};
+};
+
+const toAdmin = (row: ExperienceRow) => ({
+	...row,
+	translations: parseJson<Record<string, Partial<ExperienceTexts>>>(
+		row.translations,
+		{},
+	),
+});
+
+const asColumns = ({ translations, ...rest }: ExperienceAdminInput) => ({
+	...rest,
+	translations: JSON.stringify(toTranslationMap(translations)),
+});
+
+export async function GetAllExperiences(db: Db, { currentLocale }: Lang) {
+	const rows = await db
+		.select()
 		.from(experience)
-		.leftJoin(
-			experienceTranslations,
-			and(
-				eq(experienceTranslations.experience_id, experience.experience_id),
-				eq(experienceTranslations.locale, currentLocale as "en" | "es" | "fr"),
-			),
-		);
-
-	return allExperiences;
+		.orderBy(asc(experience.sort_order), asc(experience.experience_id));
+	return rows.map((r) => toPublic(r, currentLocale));
 }
 
-export async function CreateExperience(input: ExperienceAdminInput) {
-	const { translations, ...rest } = input;
+export async function GetAllExperiencesAdmin(db: Db) {
+	const rows = await db
+		.select()
+		.from(experience)
+		.orderBy(asc(experience.sort_order), asc(experience.experience_id));
+	return rows.map(toAdmin);
+}
 
-	return db.transaction(async (tx) => {
-		const [created] = await tx.insert(experience).values(rest).returning();
-
-		if (translations.length > 0) {
-			await tx.insert(experienceTranslations).values(
-				translations.map((t) => ({
-					experience_id: created.experience_id,
-					locale: t.locale,
-					work: t.work ?? null,
-					title: t.title,
-					subtitle: t.subtitle,
-					time: t.time,
-					location: t.location,
-				})),
-			);
-		}
-
-		return created;
-	});
+export async function CreateExperience(db: Db, input: ExperienceAdminInput) {
+	const [created] = await db
+		.insert(experience)
+		.values(asColumns(input))
+		.returning();
+	return toAdmin(created);
 }
 
 export async function UpdateExperience(
+	db: Db,
 	experienceId: number,
 	input: ExperienceAdminInput,
 ) {
-	const { translations, ...rest } = input;
-
-	return db.transaction(async (tx) => {
-		const [updated] = await tx
-			.update(experience)
-			.set(rest)
-			.where(eq(experience.experience_id, experienceId))
-			.returning();
-
-		if (!updated) return null;
-
-		// Reemplazo completo de traducciones - mismo motivo que
-		// projects.controllers.ts (semantica de PUT: recurso entero, no patch).
-		await tx
-			.delete(experienceTranslations)
-			.where(eq(experienceTranslations.experience_id, experienceId));
-
-		if (translations.length > 0) {
-			await tx.insert(experienceTranslations).values(
-				translations.map((t) => ({
-					experience_id: experienceId,
-					locale: t.locale,
-					work: t.work ?? null,
-					title: t.title,
-					subtitle: t.subtitle,
-					time: t.time,
-					location: t.location,
-				})),
-			);
-		}
-
-		return updated;
-	});
+	const [updated] = await db
+		.update(experience)
+		.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
+		.where(eq(experience.experience_id, experienceId))
+		.returning();
+	return updated ? toAdmin(updated) : null;
 }
 
-// experience_translations tiene onDelete:"cascade" y foreign_keys esta
-// ON por default en esta conexion (verificado: PRAGMA foreign_keys -> 1).
-export async function DeleteExperience(experienceId: number) {
-	const result = await db
+export async function DeleteExperience(db: Db, experienceId: number) {
+	const [deleted] = await db
 		.delete(experience)
 		.where(eq(experience.experience_id, experienceId))
 		.returning();
-	return result[0] ?? null;
+	return deleted ? toAdmin(deleted) : null;
 }

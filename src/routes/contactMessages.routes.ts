@@ -1,31 +1,49 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import type { JwtVariables } from "hono/jwt";
 import {
+	CountUnreadContactMessages,
+	DeleteContactMessage,
 	GetAllContactMessages,
 	PostContactMessage,
 	UpdateContactMessageStatus,
 } from "../controllers/contactMessages.controllers.js";
+import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
 import { parseId } from "../lib/parseId.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
-import { adminAuth } from "../middleware/adminAuth.middleware.js";
+import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { rateLimit } from "../middleware/rateLimit.middleware.js";
 import {
 	contactMessageUserInputSchema,
+	listContactMessagesQuerySchema,
 	updateContactMessageStatusSchema,
 } from "../schemas/contactMessages.js";
 
-const router = new Hono<{ Variables: JwtVariables }>();
+const router = new Hono<AppEnv>();
 
-// GET /contact-messages - bandeja de entrada del admin. Protegido por
-// JWT (docs/00-auditoria.md hallazgo 3) - registrado antes de "/:id".
-router.get("/", adminAuth, async (c) => {
-	const result = await GetAllContactMessages();
+// GET /contact-messages - bandeja de entrada del admin (Cloudflare Access).
+// ?status=unread|read|replied filtra; sin parametro devuelve todos.
+router.get(
+	"/",
+	accessAuth,
+	zValidator("query", listContactMessagesQuerySchema, zodErrorHook),
+	async (c) => {
+		const { status } = c.req.valid("query");
+		const result = await GetAllContactMessages(c.get("db"), status);
+		return c.json(
+			{ success: true, data: result } as ApiResponse<typeof result>,
+			200,
+		);
+	},
+);
+
+// GET /contact-messages/unread-count - globo de "sin leer" del menu.
+router.get("/unread-count", accessAuth, async (c) => {
+	const unread = await CountUnreadContactMessages(c.get("db"));
 	return c.json(
-		{ success: true, data: result } as ApiResponse<typeof result>,
+		{ success: true, data: { unread } } as ApiResponse<{ unread: number }>,
 		200,
 	);
 });
@@ -40,7 +58,7 @@ router.post(
 	zValidator("json", contactMessageUserInputSchema, zodErrorHook),
 	async (c) => {
 		const data = c.req.valid("json");
-		const result = await PostContactMessage(data);
+		const result = await PostContactMessage(c.get("db"), data);
 		return c.json(
 			{
 				success: true,
@@ -55,20 +73,19 @@ router.post(
 // PUT /contact-messages/:id - marcar leido/respondido. Protegido por JWT.
 router.put(
 	"/:id",
-	adminAuth,
+	accessAuth,
 	zValidator("json", updateContactMessageStatusSchema, zodErrorHook),
 	async (c) => {
 		const id = parseId(c.req.param("id"));
 
 		const { status } = c.req.valid("json");
-		const result = await UpdateContactMessageStatus(id, status);
+		const result = await UpdateContactMessageStatus(c.get("db"), id, status);
 		if (!result) {
 			throw new HTTPException(404, { message: "Mensaje no encontrado" });
 		}
 
-		const { email } = c.get("jwtPayload");
 		auditLog({
-			adminEmail: email,
+			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "contact-messages",
 			resourceId: id,
@@ -80,5 +97,27 @@ router.put(
 		);
 	},
 );
+
+// DELETE /contact-messages/:id - borrar (spam).
+router.delete("/:id", accessAuth, async (c) => {
+	const id = parseId(c.req.param("id"));
+
+	const result = await DeleteContactMessage(c.get("db"), id);
+	if (!result) {
+		throw new HTTPException(404, { message: "Mensaje no encontrado" });
+	}
+
+	auditLog({
+		adminEmail: adminEmail(c),
+		action: "delete",
+		resource: "contact-messages",
+		resourceId: id,
+	});
+
+	return c.json(
+		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
 
 export default router;

@@ -4,7 +4,7 @@ import type {
 	InsertComment,
 	SelectComment,
 } from "../interfaces/interfaces.js";
-import { db } from "../lib/db.js";
+import type { Db } from "../lib/db.js";
 import { comments } from "../schemas/comments.js";
 
 const PUBLIC_COLUMNS = {
@@ -16,6 +16,7 @@ const PUBLIC_COLUMNS = {
 	country_flag: comments.country_flag,
 	country: comments.country,
 	created_at: comments.created_at,
+	updated_at: comments.updated_at,
 	status: comments.status,
 } as const;
 
@@ -27,7 +28,7 @@ const toDateOnly = <T extends { created_at: string }>(comment: T) => ({
 // Lectura publica: SOLO comentarios ya aprobados. Un comentario nuevo del
 // publico nace "pending" (ver PostComments abajo) y no aparece aqui hasta
 // que el admin lo apruebe - ver docs/02-comentarios-y-contacto.md.
-export async function GetAllComments(): Promise<SelectComment[]> {
+export async function GetAllComments(db: Db): Promise<SelectComment[]> {
 	const allComments = await db
 		.select(PUBLIC_COLUMNS)
 		.from(comments)
@@ -41,7 +42,7 @@ export async function GetAllComments(): Promise<SelectComment[]> {
 // Lectura para el admin: todos los estados, incluye "pending"/"hidden".
 // Protegida por adminAuth (JWT) en comments.routes.ts - ver
 // docs/03-hono-admin-auth.md.
-export async function GetAllCommentsAdmin(): Promise<SelectComment[]> {
+export async function GetAllCommentsAdmin(db: Db): Promise<SelectComment[]> {
 	const allComments = await db
 		.select(PUBLIC_COLUMNS)
 		.from(comments)
@@ -54,25 +55,29 @@ export async function GetAllCommentsAdmin(): Promise<SelectComment[]> {
 // Aprobar/ocultar un comentario - la unica forma real de que un
 // comentario "pending" llegue a verse en el sitio publico.
 export async function UpdateCommentStatus(
+	db: Db,
 	commentId: number,
 	status: CommentStatus,
 ): Promise<SelectComment | null> {
 	const result = await db
 		.update(comments)
-		.set({ status })
+		.set({ status, updated_at: sql`current_timestamp` })
 		.where(eq(comments.comment_id, commentId))
 		.returning();
 
 	return result[0] ? toDateOnly(result[0]) : null;
 }
 
-export async function PostComments({
-	name,
-	job,
-	description,
-	country_flag,
-	country,
-}: Omit<InsertComment, "direction" | "status">): Promise<SelectComment> {
+export async function PostComments(
+	db: Db,
+	{
+		name,
+		job,
+		description,
+		country_flag,
+		country,
+	}: Omit<InsertComment, "direction" | "status">,
+): Promise<SelectComment> {
 	// Contar los comentarios actuales para alternar la dirección - count()
 	// agregado en vez de traer la tabla completa (SELECT *) solo para medir
 	// su longitud. La version vieja se agravaba justo bajo flood (ver
@@ -96,7 +101,6 @@ export async function PostComments({
 			country_flag,
 			country: country ?? null,
 			status: "pending",
-			created_at: new Date().toISOString(),
 		})
 		.returning();
 

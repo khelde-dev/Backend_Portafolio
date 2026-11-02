@@ -1,20 +1,32 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import type { JwtVariables } from "hono/jwt";
-import type { LanguageVariables } from "hono/language";
-import { GetAbout, UpdateAbout } from "../controllers/about.controllers.js";
+import {
+	GetAbout,
+	GetAboutAdmin,
+	UpdateAbout,
+} from "../controllers/about.controllers.js";
+import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
 import { requireLocale } from "../lib/requireLocale.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
-import { adminAuth } from "../middleware/adminAuth.middleware.js";
+import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { aboutAdminInputSchema } from "../schemas/about.js";
 
-const router = new Hono<{ Variables: JwtVariables & LanguageVariables }>();
+const router = new Hono<AppEnv>();
 
 router.get("/", async (c) => {
 	const currentLocale = requireLocale(c);
-	const result = await GetAbout({ currentLocale });
+	const result = await GetAbout(c.get("db"), { currentLocale });
+	return c.json(
+		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
+
+// GET /about/admin - para el CMS: todas las traducciones. Protegido por Cloudflare Access.
+router.get("/admin", accessAuth, async (c) => {
+	const result = await GetAboutAdmin(c.get("db"));
 	return c.json(
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
@@ -25,15 +37,14 @@ router.get("/", async (c) => {
 // no tiene sentido POST (crear otro) ni DELETE (borrar el unico).
 router.put(
 	"/",
-	adminAuth,
+	accessAuth,
 	zValidator("json", aboutAdminInputSchema, zodErrorHook),
 	async (c) => {
 		const data = c.req.valid("json");
-		const result = await UpdateAbout(data);
+		const result = await UpdateAbout(c.get("db"), data);
 
-		const { email } = c.get("jwtPayload");
 		auditLog({
-			adminEmail: email,
+			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "about",
 			resourceId: 1,

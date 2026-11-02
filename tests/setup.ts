@@ -8,4 +8,4 @@ import { fakeDb } from "./mocks/fakeDb.js";
 // ese primer import o ya es tarde (db.ts ya habria intentado conectar a
 // Turso real, y de hecho tronaria sin TURSO_DATABASE_URL/TURSO_AUTH_TOKEN
 // reales en el entorno de test).
-mock.module("../src/lib/db.js", () => ({ db: fakeDb }));
+mock.module("../src/lib/db.js", () => ({ createDb: () => fakeDb }));
