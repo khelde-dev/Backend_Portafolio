@@ -51,10 +51,10 @@ export async function applyOrder(
 	const statements = items.map(({ id, sort_order }) =>
 		db
 			.update(table)
-			// biome-ignore lint/suspicious/noExplicitAny: las columnas llegan como parametros genericos
 			.set({
 				[sortColumn.name]: sort_order,
 				[updatedColumn.name]: sql`current_timestamp`,
+				// biome-ignore lint/suspicious/noExplicitAny: las columnas llegan como parametros genericos
 			} as any)
 			.where(eq(idColumn, id))
 			.returning({ id: idColumn }),
