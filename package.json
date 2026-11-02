@@ -48,7 +48,7 @@
 		"@types/node": "^20.11.17",
 		"drizzle-kit": "^0.31.11",
 		"fast-check": "^4.10.2",
-		"typescript": "^5.8.3",
+		"typescript": "^7.0.2",
 		"wrangler": "^4.156.1"
 	},
 	"overrides": {
