@@ -4,13 +4,13 @@ API de contenido del portafolio: **Hono en un Cloudflare Worker**, base de datos
 
 ## Cómo encaja
 
-| Pieza | Para qué |
-|---|---|
-| `DB` (D1) | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto |
-| `MEDIA` (R2, bucket `portfolio`) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`) |
-| `API_TOKEN` (secreto) | bearer token que usa el proxy del portafolio |
-| Cloudflare Access | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion` |
-| `RL_PUBLIC_WRITE` | límite de peticiones para los POST públicos (comentarios, contacto) |
+| Pieza                            | Para qué                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `DB` (D1)                        | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto |
+| `MEDIA` (R2, bucket `portfolio`) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`)                                    |
+| `API_TOKEN` (secreto)            | bearer token que usa el proxy del portafolio                                                             |
+| Cloudflare Access                | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion`      |
+| `RL_PUBLIC_WRITE`                | límite de peticiones para los POST públicos (comentarios, contacto)                                      |
 
 Las traducciones (es/en/fr) viven **en la misma fila** (columna JSON `translations`): D1 no tiene transacciones interactivas y así cada escritura es una sola sentencia. Lo que no está traducido cae al valor `*_default`.
 
@@ -24,7 +24,7 @@ bunx wrangler secret put API_TOKEN             # el mismo valor que API_SECRET_T
 bun run db:migrate:remote                      # crea las tablas
 ```
 
-Cloudflare Access: en Zero Trust crea una *Self-hosted application* para el dominio del admin y copia su **AUD tag** y tu **team domain** (`https://<equipo>.cloudflareaccess.com`) a `ACCESS_AUD` y `ACCESS_TEAM_DOMAIN` en `wrangler.jsonc`. Mientras estén vacíos, las rutas del CMS responden 503 (no dejan pasar a nadie).
+Cloudflare Access: en Zero Trust crea una _Self-hosted application_ para el dominio del admin y copia su **AUD tag** y tu **team domain** (`https://<equipo>.cloudflareaccess.com`) a `ACCESS_AUD` y `ACCESS_TEAM_DOMAIN` en `wrangler.jsonc`. Mientras estén vacíos, las rutas del CMS responden 503 (no dejan pasar a nadie).
 
 ## Datos desde Turso
 
@@ -60,6 +60,6 @@ Edita `src/schemas/*.ts`, corre `bun run db:generate` y aplica con `db:migrate:l
 
 Todas bajo `/api`, todas con `Authorization: Bearer <API_TOKEN>`.
 
-- Públicas (lectura, `?currentLocale=es|en|fr`): `GET /projects`, `/experiences`, `/education`, `/skills`, `/about`, `/comments`.
+- Públicas (lectura, `?currentLocale=es|en|fr`): `GET /projects`, `/experiences`, `/education`, `/skills`, `/about`, `/comments`. También `GET /contact-info` (sin `currentLocale`: GitHub, LinkedIn, teléfono y correo del sitio, iguales en todos los idiomas).
 - Públicas (escritura, con límite): `POST /comments`, `POST /contact-messages`.
-- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; moderación de comentarios (`GET /comments/admin`, `PUT /comments/:id`) y bandeja de contacto: `GET /contact-messages` (`?status=unread|read|replied`), `GET /contact-messages/unread-count`, `PUT /contact-messages/:id` (cambia el estado; `replied` guarda `replied_at`) y `DELETE /contact-messages/:id`.
+- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; `GET /contact-info/admin` y `PUT /contact-info` (datos de contacto, una sola fila); moderación de comentarios (`GET /comments/admin`, `PUT /comments/:id`) y bandeja de contacto: `GET /contact-messages` (`?status=unread|read|replied`), `GET /contact-messages/unread-count`, `PUT /contact-messages/:id` (cambia el estado; `replied` guarda `replied_at`) y `DELETE /contact-messages/:id`.

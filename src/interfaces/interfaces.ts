@@ -10,13 +10,13 @@ export interface Lang {
 // pasa por aqui - un solo lugar para ver que tipos existen en la API, en
 // vez de tener que saber en que archivo de schema vive cada uno.
 export type { AboutAdminInput } from "../schemas/about.js";
-
 export type {
 	InsertComment,
 	SelectComment,
 	UpdateCommentStatusInput,
 	UserInputComment,
 } from "../schemas/comments.js";
+export type { ContactInfoInput } from "../schemas/contactInfo.js";
 
 export type {
 	ContactMessageUserInput,
