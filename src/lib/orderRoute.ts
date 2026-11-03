@@ -81,7 +81,8 @@ export const registerOrderRoute = (
 		zValidator("json", orderInputSchema, zodErrorHook),
 		async (c) => {
 			const result = await applyOrder(c.get("db"), target, c.req.valid("json"));
-			auditLog({
+			await auditLog({
+				db: c.get("db"),
 				adminEmail: adminEmail(c),
 				action: "update",
 				resource: target.resource,

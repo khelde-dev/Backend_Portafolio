@@ -57,11 +57,13 @@ router.post(
 		const data = c.req.valid("json");
 		const result = await CreateSkill(c.get("db"), data);
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "create",
 			resource: "skills",
 			resourceId: result.skill_id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -89,11 +91,13 @@ router.put(
 			throw new HTTPException(404, { message: "Habilidad no encontrada" });
 		}
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "skills",
 			resourceId: id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -113,11 +117,13 @@ router.delete("/:id", accessAuth, async (c) => {
 		throw new HTTPException(404, { message: "Habilidad no encontrada" });
 	}
 
-	auditLog({
+	await auditLog({
+		db: c.get("db"),
 		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "skills",
 		resourceId: id,
+		summary: result.title_default,
 	});
 
 	return c.json(

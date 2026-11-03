@@ -40,7 +40,8 @@ router.put(
 	async (c) => {
 		const result = await UpdateContactInfo(c.get("db"), c.req.valid("json"));
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "contact-info",

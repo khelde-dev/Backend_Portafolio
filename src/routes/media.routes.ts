@@ -97,7 +97,8 @@ router.post(
 			},
 			customMetadata: { uploadedBy: adminEmail(c), folder: use },
 		});
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "create",
 			resource: "media",
@@ -140,7 +141,8 @@ router.delete("/:key{.+}", async (c) => {
 	}
 
 	await c.env.MEDIA.delete(key);
-	auditLog({
+	await auditLog({
+		db: c.get("db"),
 		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "media",
