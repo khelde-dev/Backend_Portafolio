@@ -23,9 +23,11 @@ import {
 import { customLogger } from "./middleware/logger.middleware.js";
 import about from "./routes/about.routes.js";
 import comments from "./routes/comments.routes.js";
+import contactInfo from "./routes/contactInfo.routes.js";
 import contactMessages from "./routes/contactMessages.routes.js";
 import education from "./routes/education.routes.js";
 import experiences from "./routes/experiences.routes.js";
+import media from "./routes/media.routes.js";
 import projects from "./routes/projects.routes.js";
 import skills from "./routes/skills.routes.js";
 
@@ -61,11 +63,17 @@ app.use(
 // Content-Type: application/json en CADA escritura, incluidas las que no
 // llevan body (un DELETE).
 app.use("*", csrfMiddleware());
-// 50kb: todos los payloads son formularios/JSON chicos. Las imagenes se
-// suben por una ruta propia con su limite.
-app.use("*", bodyLimit({ maxSize: 50 * 1024 }));
+// /api/media sube imagenes: tiene su propio tope (2 MB) y mas tiempo (ver
+// routes/media.routes.ts), asi que los limites globales de abajo no le aplican.
+const unlessMedia =
+	(middleware: MiddlewareHandler<AppEnv>): MiddlewareHandler<AppEnv> =>
+	(c, next) =>
+		c.req.path.startsWith("/api/media") ? next() : middleware(c, next);
+
+// 50kb: todos los payloads son formularios/JSON chicos.
+app.use("*", unlessMedia(bodyLimit({ maxSize: 50 * 1024 })));
 app.use("*", etag());
-app.use("*", timeout(10_000));
+app.use("*", unlessMedia(timeout(10_000)));
 app.use(prettyJSON({ space: 4 }));
 
 app.get("/", async (c) => {
@@ -96,9 +104,11 @@ app.route("/comments", comments);
 app.route("/projects", projects);
 app.route("/experiences", experiences);
 app.route("/contact-messages", contactMessages);
+app.route("/contact-info", contactInfo);
 app.route("/about", about);
 app.route("/education", education);
 app.route("/skills", skills);
+app.route("/media", media);
 
 export default app;
 

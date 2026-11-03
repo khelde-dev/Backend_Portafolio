@@ -22,6 +22,7 @@ describe("migraciones sobre una D1 real", () => {
 		expect(await names("table")).toEqual([
 			"about",
 			"comments",
+			"contact_info",
 			"contact_messages",
 			"education",
 			"experience",

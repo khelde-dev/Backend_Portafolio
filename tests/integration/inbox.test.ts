@@ -112,6 +112,62 @@ describe("bandeja de contacto", () => {
 	});
 });
 
+describe("moderacion: globo y borrado", () => {
+	it("cuenta los pendientes, baja al aprobar y el borrado quita el comentario", async () => {
+		await sendComment();
+		await sendComment({ name: "Marta" });
+
+		const pending = async () =>
+			(
+				await json(
+					await call("/api/comments/pending-count", await adminAuthed()),
+				)
+			).data.pending;
+		expect(await pending()).toBe(2);
+
+		const admin = await json(
+			await call("/api/comments/admin", await adminAuthed()),
+		);
+		const [first, second] = admin.data;
+
+		await call(
+			`/api/comments/${first.comment_id}`,
+			await adminAuthed({
+				method: "PUT",
+				body: JSON.stringify({ status: "published" }),
+			}),
+		);
+		expect(await pending()).toBe(1);
+
+		const del = await call(
+			`/api/comments/${second.comment_id}`,
+			await adminAuthed({ method: "DELETE" }),
+		);
+		expect(del.status).toBe(200);
+		expect(await pending()).toBe(0);
+
+		const after = await json(
+			await call("/api/comments/admin", await adminAuthed()),
+		);
+		expect(after.data).toHaveLength(1);
+
+		const again = await call(
+			`/api/comments/${second.comment_id}`,
+			await adminAuthed({ method: "DELETE" }),
+		);
+		expect(again.status).toBe(404);
+	});
+
+	it("el conteo y el borrado exigen Access", async () => {
+		expect((await call("/api/comments/pending-count", authed())).status).toBe(
+			401,
+		);
+		expect(
+			(await call("/api/comments/1", authed({ method: "DELETE" }))).status,
+		).toBe(401);
+	});
+});
+
 describe("comentarios con moderacion", () => {
 	it("un comentario nuevo queda pendiente y no se ve hasta aprobarlo", async () => {
 		expect((await sendComment()).status).toBe(201);
