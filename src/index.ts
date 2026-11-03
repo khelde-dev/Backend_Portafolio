@@ -92,7 +92,11 @@ app.get("/", async (c) => {
 // Access (accessAuth, dentro de cada router).
 app.use("*", async (c, next) => {
 	const handler = bearerAuth({
-		token: c.env.API_TOKEN,
+		// El token del sitio publico y, si existe, el exclusivo del CMS (que ademas
+		// es el unico que acepta accessAuth).
+		token: [c.env.API_TOKEN, c.env.API_TOKEN_ADMIN].filter((t): t is string =>
+			Boolean(t),
+		),
 		noAuthenticationHeaderMessage: "No Authorization header",
 		invalidAuthenticationHeaderMessage: "Invalid Authorization header",
 		invalidTokenMessage: "Invalid token",
