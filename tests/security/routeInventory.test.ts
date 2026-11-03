@@ -56,6 +56,10 @@ const POLICY: Record<string, Policy> = {
 	"DELETE /api/comments/:id": "access",
 	"GET /api/comments/pending-count": "access",
 
+	"GET /api/media": "access",
+	"POST /api/media": "access",
+	"DELETE /api/media/:key{.+}": "access",
+
 	"GET /api/contact-messages": "access",
 	"GET /api/contact-messages/unread-count": "access",
 	"PUT /api/contact-messages/:id": "access",
