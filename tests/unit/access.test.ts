@@ -98,6 +98,8 @@ describe("Cloudflare Access (rutas del CMS)", () => {
 		["GET", "/api/contact-messages/unread-count"],
 		["DELETE", "/api/contact-messages/1"],
 		["GET", "/api/comments/admin"],
+		["GET", "/api/comments/pending-count"],
+		["DELETE", "/api/comments/1"],
 	])("%s %s exige Access", async (method, path) => {
 		const res = await app.request(
 			path,
