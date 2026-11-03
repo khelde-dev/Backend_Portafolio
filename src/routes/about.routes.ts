@@ -43,7 +43,8 @@ router.put(
 		const data = c.req.valid("json");
 		const result = await UpdateAbout(c.get("db"), data);
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "about",

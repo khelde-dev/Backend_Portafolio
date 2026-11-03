@@ -56,6 +56,8 @@ const POLICY: Record<string, Policy> = {
 	"GET /api/about/admin": "access",
 	"PUT /api/about": "access",
 
+	"GET /api/audit": "access",
+
 	"GET /api/contact-info/admin": "access",
 	"PUT /api/contact-info": "access",
 

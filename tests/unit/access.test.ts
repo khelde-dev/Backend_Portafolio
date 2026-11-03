@@ -92,6 +92,7 @@ describe("Cloudflare Access (rutas del CMS)", () => {
 		["PUT", "/api/education/1"],
 		["DELETE", "/api/skills/1"],
 		["PUT", "/api/about"],
+		["GET", "/api/audit"],
 		["GET", "/api/contact-info/admin"],
 		["PUT", "/api/contact-info"],
 		["PUT", "/api/comments/1"],

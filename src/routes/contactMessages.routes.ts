@@ -84,11 +84,13 @@ router.put(
 			throw new HTTPException(404, { message: "Mensaje no encontrado" });
 		}
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "contact-messages",
 			resourceId: id,
+			summary: `estado: ${status}`,
 		});
 
 		return c.json(
@@ -107,7 +109,8 @@ router.delete("/:id", accessAuth, async (c) => {
 		throw new HTTPException(404, { message: "Mensaje no encontrado" });
 	}
 
-	auditLog({
+	await auditLog({
+		db: c.get("db"),
 		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "contact-messages",

@@ -22,6 +22,7 @@ import {
 } from "./middleware/errorHandler.middleware.js";
 import { customLogger } from "./middleware/logger.middleware.js";
 import about from "./routes/about.routes.js";
+import audit from "./routes/audit.routes.js";
 import comments from "./routes/comments.routes.js";
 import contactInfo from "./routes/contactInfo.routes.js";
 import contactMessages from "./routes/contactMessages.routes.js";
@@ -109,6 +110,7 @@ app.route("/about", about);
 app.route("/education", education);
 app.route("/skills", skills);
 app.route("/media", media);
+app.route("/audit", audit);
 
 export default app;
 

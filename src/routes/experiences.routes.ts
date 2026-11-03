@@ -60,11 +60,13 @@ router.post(
 		const data = c.req.valid("json");
 		const result = await CreateExperience(c.get("db"), data);
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "create",
 			resource: "experiences",
 			resourceId: result.experience_id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -92,11 +94,13 @@ router.put(
 			throw new HTTPException(404, { message: "Experiencia no encontrada" });
 		}
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "experiences",
 			resourceId: id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -116,11 +120,13 @@ router.delete("/:id", accessAuth, async (c) => {
 		throw new HTTPException(404, { message: "Experiencia no encontrada" });
 	}
 
-	auditLog({
+	await auditLog({
+		db: c.get("db"),
 		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "experiences",
 		resourceId: id,
+		summary: result.title_default,
 	});
 
 	return c.json(
