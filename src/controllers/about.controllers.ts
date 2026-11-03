@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { AboutAdminInput, Lang } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
-import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
+import { staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
