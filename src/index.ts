@@ -47,7 +47,19 @@ app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
 app.use("*", trimTrailingSlash());
-app.use("*", secureHeaders());
+// CSP minima: la API solo devuelve JSON (y las imagenes de /api/media), nunca una
+// pagina, asi que no necesita cargar nada ni dejar que la enmarquen.
+app.use(
+	"*",
+	secureHeaders({
+		contentSecurityPolicy: {
+			defaultSrc: ["'none'"],
+			baseUri: ["'none'"],
+			formAction: ["'none'"],
+			frameAncestors: ["'none'"],
+		},
+	}),
+);
 app.use("*", corsMiddleware());
 // ?currentLocale= (es-MX -> es por truncamiento progresivo); API sin estado.
 app.use(

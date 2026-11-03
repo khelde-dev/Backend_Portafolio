@@ -28,6 +28,18 @@ describe("cabeceras de seguridad", () => {
 				);
 			});
 
+			it("CSP minima: no carga nada, no se enmarca y no cambia el <base>", async () => {
+				const res = await send();
+				const csp = res.headers.get("content-security-policy") ?? "";
+				const directives = csp.split(";").map((part) => part.trim());
+				expect(directives).toContain("default-src 'none'");
+				expect(directives).toContain("frame-ancestors 'none'");
+				expect(directives).toContain("base-uri 'none'");
+				expect(directives).toContain("form-action 'none'");
+				// Ninguna directiva abre la puerta a scripts ni a estilos.
+				expect(csp).not.toMatch(/unsafe-inline|unsafe-eval|script-src/);
+			});
+
 			it("HSTS con al menos 6 meses", async () => {
 				const res = await send();
 				const hsts = res.headers.get("strict-transport-security") ?? "";
