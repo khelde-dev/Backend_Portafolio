@@ -17,7 +17,6 @@ export type {
 	UserInputComment,
 } from "../schemas/comments.js";
 export type { ContactInfoInput } from "../schemas/contactInfo.js";
-
 export type {
 	ContactMessageUserInput,
 	InsertContactMessage,
@@ -27,6 +26,7 @@ export type {
 export type { EducationAdminInput } from "../schemas/education.js";
 export type { ExperienceAdminInput } from "../schemas/experiences.js";
 export type { ProjectAdminInput } from "../schemas/projects.js";
+export type { SiteCopyAdminInput } from "../schemas/siteCopy.js";
 export type { SkillAdminInput } from "../schemas/skills.js";
 
 // Enums útiles

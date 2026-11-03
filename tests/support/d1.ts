@@ -22,6 +22,7 @@ const TABLES = [
 	"education",
 	"experience",
 	"projects",
+	"site_copy",
 	"skills",
 ] as const;
 
@@ -53,6 +54,9 @@ const boot = async () => {
 	const proxy = await getPlatformProxy<{ DB: D1Database; MEDIA: R2Bucket }>({
 		configPath: "wrangler.jsonc",
 		persist: false,
+		// Siempre en memoria: aunque en tu copia local el bucket este en `remote` (para
+		// probar el CMS contra el R2 real), las pruebas jamas deben tocar R2 de verdad.
+		remoteBindings: false,
 	});
 	for (const sql of migrationStatements()) {
 		await proxy.env.DB.prepare(sql).run();

@@ -28,6 +28,7 @@ describe("migraciones sobre una D1 real", () => {
 			"education",
 			"experience",
 			"projects",
+			"site_copy",
 			"skills",
 		]);
 	});

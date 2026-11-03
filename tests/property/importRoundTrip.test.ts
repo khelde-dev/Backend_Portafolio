@@ -78,7 +78,7 @@ describe("buildImportSql contra SQLite real", () => {
 						"SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
 					)
 					.get() as { n: number };
-				expect(tables.n).toBe(9);
+				expect(tables.n).toBe(10);
 				db.close();
 			}),
 			{ numRuns: 150 },

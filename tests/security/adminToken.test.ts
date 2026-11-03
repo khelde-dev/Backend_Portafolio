@@ -41,6 +41,7 @@ const WITH_ADMIN_TOKEN = { API_TOKEN_ADMIN: ADMIN_TOKEN };
 // Una muestra de rutas del CMS de cada router.
 const CMS_ROUTES: [string, string][] = [
 	["GET", "/api/audit"],
+	["PUT", "/api/site-copy"],
 	["GET", "/api/projects/admin"],
 	["PUT", "/api/projects/1"],
 	["DELETE", "/api/projects/1"],
