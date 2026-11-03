@@ -85,6 +85,8 @@ describe("Cloudflare Access (rutas del CMS)", () => {
 	it.each([
 		["POST", "/api/projects"],
 		["PUT", "/api/projects/1"],
+		["PUT", "/api/projects/order"],
+		["PUT", "/api/skills/order"],
 		["DELETE", "/api/projects/1"],
 		["POST", "/api/experiences"],
 		["PUT", "/api/education/1"],
