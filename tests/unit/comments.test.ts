@@ -137,6 +137,95 @@ describe("GET /api/comments/admin", () => {
 	});
 });
 
+describe("GET /api/comments/pending-count", () => {
+	afterEach(() => {
+		setFakeDbResult([]);
+	});
+
+	it("devuelve cuantos comentarios esperan moderacion", async () => {
+		setFakeDbResult([{ value: 4 }]);
+		const res = await app.request(
+			"/api/comments/pending-count",
+			await adminAuthed(),
+		);
+		expect(res.status).toBe(200);
+		expect((await res.json()).data).toEqual({ pending: 4 });
+	});
+
+	it("0 cuando no hay nada", async () => {
+		setFakeDbResult([]);
+		const res = await app.request(
+			"/api/comments/pending-count",
+			await adminAuthed(),
+		);
+		expect((await res.json()).data).toEqual({ pending: 0 });
+	});
+
+	it("401 sin sesion de Access", async () => {
+		const res = await app.request("/api/comments/pending-count", authed());
+		expect(res.status).toBe(401);
+	});
+});
+
+describe("DELETE /api/comments/:id", () => {
+	afterEach(() => {
+		setFakeDbResult([]);
+	});
+
+	it("200 y devuelve el comentario borrado", async () => {
+		setFakeDbResult([
+			{
+				comment_id: 7,
+				status: "hidden",
+				created_at: "2026-01-01T00:00:00.000Z",
+			},
+		]);
+		const res = await app.request(
+			"/api/comments/7",
+			await adminAuthed({
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect((await res.json()).data.comment_id).toBe(7);
+	});
+
+	it("404 si no existe", async () => {
+		setFakeDbResult([]);
+		const res = await app.request(
+			"/api/comments/999",
+			await adminAuthed({
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		expect(res.status).toBe(404);
+	});
+
+	it("400 con un id no numerico", async () => {
+		const res = await app.request(
+			"/api/comments/abc",
+			await adminAuthed({
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		expect(res.status).toBe(400);
+	});
+
+	it("401 sin sesion de Access", async () => {
+		const res = await app.request(
+			"/api/comments/1",
+			authed({
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		expect(res.status).toBe(401);
+	});
+});
+
 describe("PUT /api/comments/:id", () => {
 	afterEach(() => {
 		setFakeDbResult([]);

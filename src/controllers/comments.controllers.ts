@@ -74,6 +74,28 @@ export async function UpdateCommentStatus(
 	return result[0] ? toDateOnly(result[0]) : null;
 }
 
+// Para el globo de "pendientes" del menu del admin, sin bajar los comentarios.
+export async function CountPendingComments(db: Db): Promise<number> {
+	const [row] = await db
+		.select({ value: count() })
+		.from(comments)
+		.where(eq(comments.status, "pending"));
+	return row?.value ?? 0;
+}
+
+// Borrado definitivo (spam o datos personales que alguien pide retirar). Ocultar
+// ("hidden") cubre casi siempre; esto es para cuando no basta.
+export async function DeleteComment(
+	db: Db,
+	commentId: number,
+): Promise<SelectComment | null> {
+	const [deleted] = await db
+		.delete(comments)
+		.where(eq(comments.comment_id, commentId))
+		.returning();
+	return deleted ? toDateOnly(deleted) : null;
+}
+
 export async function PostComments(
 	db: Db,
 	{

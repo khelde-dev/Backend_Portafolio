@@ -2,6 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import {
+	CountPendingComments,
+	DeleteComment,
 	GetAllComments,
 	GetAllCommentsAdmin,
 	PostComments,
@@ -37,6 +39,16 @@ router.get("/admin", accessAuth, async (c) => {
 	const result = await GetAllCommentsAdmin(c.get("db"));
 	return c.json(
 		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
+
+// GET /comments/pending-count - globo de "pendientes" del menu del admin.
+// Antes de "/:id" para que no lo tome por un id.
+router.get("/pending-count", accessAuth, async (c) => {
+	const pending = await CountPendingComments(c.get("db"));
+	return c.json(
+		{ success: true, data: { pending } } as ApiResponse<{ pending: number }>,
 		200,
 	);
 });
@@ -90,5 +102,24 @@ router.put(
 		);
 	},
 );
+
+// DELETE /comments/:id - borrado definitivo (el admin lo ofrece solo desde "Ocultos").
+router.delete("/:id", accessAuth, async (c) => {
+	const id = parseId(c.req.param("id"));
+	const result = await DeleteComment(c.get("db"), id);
+	if (!result) {
+		throw new HTTPException(404, { message: "Comentario no encontrado" });
+	}
+	auditLog({
+		adminEmail: adminEmail(c),
+		action: "delete",
+		resource: "comments",
+		resourceId: id,
+	});
+	return c.json(
+		{ success: true, data: result } as ApiResponse<typeof result>,
+		200,
+	);
+});
 
 export default router;
