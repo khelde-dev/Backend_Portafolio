@@ -11,6 +11,7 @@ import {
 import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
+import { splitExpected } from "../lib/optimistic.js";
 import { registerOrderRoute } from "../lib/orderRoute.js";
 import { parseId } from "../lib/parseId.js";
 import { requireLocale } from "../lib/requireLocale.js";
@@ -57,14 +58,16 @@ router.post(
 	accessAuth,
 	zValidator("json", experienceAdminInputSchema, zodErrorHook),
 	async (c) => {
-		const data = c.req.valid("json");
+		const { data } = splitExpected(c.req.valid("json"));
 		const result = await CreateExperience(c.get("db"), data);
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "create",
 			resource: "experiences",
 			resourceId: result.experience_id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -86,17 +89,19 @@ router.put(
 	async (c) => {
 		const id = parseId(c.req.param("id"));
 
-		const data = c.req.valid("json");
-		const result = await UpdateExperience(c.get("db"), id, data);
+		const { expected, data } = splitExpected(c.req.valid("json"));
+		const result = await UpdateExperience(c.get("db"), id, data, expected);
 		if (!result) {
 			throw new HTTPException(404, { message: "Experiencia no encontrada" });
 		}
 
-		auditLog({
+		await auditLog({
+			db: c.get("db"),
 			adminEmail: adminEmail(c),
 			action: "update",
 			resource: "experiences",
 			resourceId: id,
+			summary: data.title_default,
 		});
 
 		return c.json(
@@ -116,11 +121,13 @@ router.delete("/:id", accessAuth, async (c) => {
 		throw new HTTPException(404, { message: "Experiencia no encontrada" });
 	}
 
-	auditLog({
+	await auditLog({
+		db: c.get("db"),
 		adminEmail: adminEmail(c),
 		action: "delete",
 		resource: "experiences",
 		resourceId: id,
+		summary: result.title_default,
 	});
 
 	return c.json(

@@ -4,13 +4,14 @@ API de contenido del portafolio: **Hono en un Cloudflare Worker**, base de datos
 
 ## Cómo encaja
 
-| Pieza                            | Para qué                                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `DB` (D1)                        | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto |
-| `MEDIA` (R2, bucket `portfolio`) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`)                                    |
-| `API_TOKEN` (secreto)            | bearer token que usa el proxy del portafolio                                                             |
-| Cloudflare Access                | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion`      |
-| `RL_PUBLIC_WRITE`                | límite de peticiones para los POST públicos (comentarios, contacto)                                      |
+| Pieza                                 | Para qué                                                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DB` (D1)                             | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto                                                                 |
+| `MEDIA` (R2, bucket `portfolio`)      | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`)                                                                                                    |
+| `API_TOKEN` (secreto)                 | bearer token que usa el proxy del portafolio                                                                                                                             |
+| `API_TOKEN_ADMIN` (secreto, opcional) | bearer exclusivo del CMS: si existe, las rutas del CMS exigen este (el de `API_TOKEN` solo vale para las lecturas públicas). Ponlo igual en `API_SECRET_TOKEN` del admin |
+| Cloudflare Access                     | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion`                                                                      |
+| `RL_PUBLIC_WRITE`                     | límite de peticiones para los POST públicos (comentarios, contacto)                                                                                                      |
 
 Las traducciones (es/en/fr) viven **en la misma fila** (columna JSON `translations`): D1 no tiene transacciones interactivas y así cada escritura es una sola sentencia. Lo que no está traducido cae al valor `*_default`.
 
@@ -60,6 +61,6 @@ Edita `src/schemas/*.ts`, corre `bun run db:generate` y aplica con `db:migrate:l
 
 Todas bajo `/api`, todas con `Authorization: Bearer <API_TOKEN>`.
 
-- Públicas (lectura, `?currentLocale=es|en|fr`): `GET /projects`, `/experiences`, `/education`, `/skills`, `/about`, `/comments`. También `GET /contact-info` (sin `currentLocale`: GitHub, LinkedIn, teléfono y correo del sitio, iguales en todos los idiomas).
+- Públicas (lectura, `?currentLocale=es|en|fr`): `GET /projects`, `/experiences`, `/education`, `/skills`, `/about`, `/comments`. También `GET /site-copy?currentLocale=` (hero, manifiesto, descripción y la clave de la foto del hero) y `GET /contact-info` (sin `currentLocale`: GitHub, LinkedIn, teléfono y correo del sitio, iguales en todos los idiomas).
 - Públicas (escritura, con límite): `POST /comments`, `POST /contact-messages`.
-- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; `GET /contact-info/admin` y `PUT /contact-info` (datos de contacto, una sola fila); moderación de comentarios (`GET /comments/admin`, `PUT /comments/:id`) y bandeja de contacto: `GET /contact-messages` (`?status=unread|read|replied`), `GET /contact-messages/unread-count`, `PUT /contact-messages/:id` (cambia el estado; `replied` guarda `replied_at`) y `DELETE /contact-messages/:id`.
+- CMS (además, sesión de Cloudflare Access): `GET /<recurso>/admin`, `POST`, `PUT /:id`, `DELETE /:id` sobre proyectos, experiencias, educación y habilidades; `PUT /about`; `GET /contact-info/admin` y `PUT /contact-info` (datos de contacto, una sola fila); `GET /site-copy/admin` y `PUT /site-copy` (textos del sitio y foto del hero, una sola fila); `GET /audit?limit=` (historial de cambios del CMS: quién, qué y cuándo; se conservan las últimas 1 000 filas); los `PUT` de proyectos, experiencia, educación, habilidades, sobre mí y contacto aceptan el `updated_at` leído y responden **409** si la fila cambió (edición en dos pestañas); sin él reemplazan como siempre; moderación de comentarios (`GET /comments/admin`, `PUT /comments/:id`) y bandeja de contacto: `GET /contact-messages` (`?status=unread|read|replied`), `GET /contact-messages/unread-count`, `PUT /contact-messages/:id` (cambia el estado; `replied` guarda `replied_at`) y `DELETE /contact-messages/:id`.

@@ -19,6 +19,8 @@ const skillTranslationInputSchema = z.object({
 });
 
 export const skillAdminInputSchema = z.object({
+	// El `updated_at` que leyo el formulario: si la fila ya cambio, el PUT da 409.
+	updated_at: z.string().max(40).optional(),
 	sort_order: z.number().int().default(0),
 	title_default: z.string().min(1, "El titulo default es requerido"),
 	images_topics: z.array(z.string()).default([]),

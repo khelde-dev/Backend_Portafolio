@@ -22,6 +22,7 @@ import {
 } from "./middleware/errorHandler.middleware.js";
 import { customLogger } from "./middleware/logger.middleware.js";
 import about from "./routes/about.routes.js";
+import audit from "./routes/audit.routes.js";
 import comments from "./routes/comments.routes.js";
 import contactInfo from "./routes/contactInfo.routes.js";
 import contactMessages from "./routes/contactMessages.routes.js";
@@ -29,6 +30,7 @@ import education from "./routes/education.routes.js";
 import experiences from "./routes/experiences.routes.js";
 import media from "./routes/media.routes.js";
 import projects from "./routes/projects.routes.js";
+import siteCopy from "./routes/siteCopy.routes.js";
 import skills from "./routes/skills.routes.js";
 
 // Prefijo informativo, NO secreto: la seguridad real vive en el bearer
@@ -91,7 +93,11 @@ app.get("/", async (c) => {
 // Access (accessAuth, dentro de cada router).
 app.use("*", async (c, next) => {
 	const handler = bearerAuth({
-		token: c.env.API_TOKEN,
+		// El token del sitio publico y, si existe, el exclusivo del CMS (que ademas
+		// es el unico que acepta accessAuth).
+		token: [c.env.API_TOKEN, c.env.API_TOKEN_ADMIN].filter((t): t is string =>
+			Boolean(t),
+		),
 		noAuthenticationHeaderMessage: "No Authorization header",
 		invalidAuthenticationHeaderMessage: "Invalid Authorization header",
 		invalidTokenMessage: "Invalid token",
@@ -105,10 +111,12 @@ app.route("/projects", projects);
 app.route("/experiences", experiences);
 app.route("/contact-messages", contactMessages);
 app.route("/contact-info", contactInfo);
+app.route("/site-copy", siteCopy);
 app.route("/about", about);
 app.route("/education", education);
 app.route("/skills", skills);
 app.route("/media", media);
+app.route("/audit", audit);
 
 export default app;
 

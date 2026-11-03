@@ -21,12 +21,14 @@ describe("migraciones sobre una D1 real", () => {
 	it("crea exactamente las tablas del portafolio", async () => {
 		expect(await names("table")).toEqual([
 			"about",
+			"audit_log",
 			"comments",
 			"contact_info",
 			"contact_messages",
 			"education",
 			"experience",
 			"projects",
+			"site_copy",
 			"skills",
 		]);
 	});

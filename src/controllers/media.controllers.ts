@@ -4,10 +4,11 @@ import { about } from "../schemas/about.js";
 import { education } from "../schemas/education.js";
 import { experience } from "../schemas/experiences.js";
 import { projects } from "../schemas/projects.js";
+import { siteCopy } from "../schemas/siteCopy.js";
 
 /** Donde se usa una imagen: para mostrarlo en la biblioteca y bloquear borrados. */
 export interface MediaUsage {
-	resource: "projects" | "experiences" | "education" | "about";
+	resource: "projects" | "experiences" | "education" | "about" | "site-copy";
 	id: number;
 	label: string;
 	field: string;
@@ -33,7 +34,7 @@ const parseList = (raw: unknown): string[] => {
 export async function GetMediaUsage(
 	db: Db,
 ): Promise<Map<string, MediaUsage[]>> {
-	const [projectRows, experienceRows, educationRows, aboutRows] =
+	const [projectRows, experienceRows, educationRows, aboutRows, siteRows] =
 		await Promise.all([
 			db
 				.select({
@@ -58,6 +59,9 @@ export async function GetMediaUsage(
 				})
 				.from(education),
 			db.select({ id: about.about_id, image: about.image }).from(about),
+			db
+				.select({ id: siteCopy.site_copy_id, hero: siteCopy.hero_image })
+				.from(siteCopy),
 		]);
 
 	const usage = new Map<string, MediaUsage[]>();
@@ -105,6 +109,14 @@ export async function GetMediaUsage(
 			id: r.id,
 			label: "Sobre mí",
 			field: "image",
+		});
+	}
+	for (const r of siteRows) {
+		add(r.hero, {
+			resource: "site-copy",
+			id: r.id,
+			label: "Textos del sitio",
+			field: "hero_image",
 		});
 	}
 	return usage;

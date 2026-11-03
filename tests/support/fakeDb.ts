@@ -58,7 +58,16 @@ export const getLastInsertValues = (): unknown =>
 export const getLastUpdateValues = (): unknown =>
 	updateCalls[updateCalls.length - 1];
 
-const chainable = (): Chainable => {
+// El historial de auditoria se guarda en cada escritura admin: sus inserts no
+// deben mezclarse con los del recurso que el test esta mirando.
+const isAuditTable = (table: unknown): boolean =>
+	Boolean(
+		table &&
+			(table as Record<symbol, unknown>)[Symbol.for("drizzle:Name")] ===
+				"audit_log",
+	);
+
+const chainable = (record = true): Chainable => {
 	const target = (..._args: unknown[]) => chainable();
 	return new Proxy(target, {
 		get(_t, prop) {
@@ -71,8 +80,8 @@ const chainable = (): Chainable => {
 			}
 			if (prop === "values") {
 				return (arg: unknown) => {
-					insertCalls.push(arg);
-					return chainable();
+					if (record) insertCalls.push(arg);
+					return chainable(record);
 				};
 			}
 			if (prop === "set") {
@@ -81,7 +90,7 @@ const chainable = (): Chainable => {
 					return chainable();
 				};
 			}
-			return () => chainable();
+			return () => chainable(record);
 		},
 	});
 };
@@ -89,13 +98,15 @@ const chainable = (): Chainable => {
 interface FakeQueryBuilder {
 	select: (..._args: unknown[]) => Chainable;
 	insert: (..._args: unknown[]) => Chainable;
+	batch: (..._args: unknown[]) => Chainable;
 	update: (..._args: unknown[]) => Chainable;
 	delete: (..._args: unknown[]) => Chainable;
 }
 
 const baseFakeDb: FakeQueryBuilder = {
 	select: (..._args: unknown[]) => chainable(),
-	insert: (..._args: unknown[]) => chainable(),
+	insert: (table?: unknown) => chainable(!isAuditTable(table)),
+	batch: (..._args: unknown[]) => chainable(),
 	update: (..._args: unknown[]) => chainable(),
 	delete: (..._args: unknown[]) => chainable(),
 };
