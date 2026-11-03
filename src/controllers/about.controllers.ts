@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { AboutAdminInput, Lang } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
+import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
@@ -48,7 +49,11 @@ export async function GetAboutAdmin(db: Db) {
 }
 
 // Un solo upsert: crea la fila la primera vez y la reemplaza despues.
-export async function UpdateAbout(db: Db, input: AboutAdminInput) {
+export async function UpdateAbout(
+	db: Db,
+	input: AboutAdminInput,
+	expected?: string,
+) {
 	const { translations, ...rest } = input;
 	const values = {
 		...rest,
@@ -60,7 +65,10 @@ export async function UpdateAbout(db: Db, input: AboutAdminInput) {
 		.onConflictDoUpdate({
 			target: about.about_id,
 			set: { ...values, updated_at: sql`current_timestamp` },
+			// Si la fila cambio desde que se leyo, no se pisa (ver lib/optimistic.ts).
+			setWhere: unchangedSince(about.updated_at, expected),
 		})
 		.returning();
+	if (!saved) throw staleConflict();
 	return toAdmin(saved);
 }

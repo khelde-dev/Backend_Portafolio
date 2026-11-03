@@ -1,6 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import type { ExperienceAdminInput, Lang } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
+import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
@@ -72,13 +73,28 @@ export async function UpdateExperience(
 	db: Db,
 	experienceId: number,
 	input: ExperienceAdminInput,
+	expected?: string,
 ) {
 	const [updated] = await db
 		.update(experience)
 		.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
-		.where(eq(experience.experience_id, experienceId))
+		.where(
+			andWith(
+				eq(experience.experience_id, experienceId),
+				unchangedSince(experience.updated_at, expected),
+			),
+		)
 		.returning();
-	return updated ? toAdmin(updated) : null;
+	if (updated) return toAdmin(updated);
+	// Sin fila: o ya no existe (404) o cambio desde que se leyo (409).
+	if (expected) {
+		const [still] = await db
+			.select({ id: experience.experience_id })
+			.from(experience)
+			.where(eq(experience.experience_id, experienceId));
+		if (still) throw staleConflict();
+	}
+	return null;
 }
 
 export async function DeleteExperience(db: Db, experienceId: number) {

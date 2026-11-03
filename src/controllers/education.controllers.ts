@@ -1,6 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import type { EducationAdminInput, Lang } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
+import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
@@ -69,13 +70,28 @@ export async function UpdateEducation(
 	db: Db,
 	educationId: number,
 	input: EducationAdminInput,
+	expected?: string,
 ) {
 	const [updated] = await db
 		.update(education)
 		.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
-		.where(eq(education.education_id, educationId))
+		.where(
+			andWith(
+				eq(education.education_id, educationId),
+				unchangedSince(education.updated_at, expected),
+			),
+		)
 		.returning();
-	return updated ? toAdmin(updated) : null;
+	if (updated) return toAdmin(updated);
+	// Sin fila: o ya no existe (404) o cambio desde que se leyo (409).
+	if (expected) {
+		const [still] = await db
+			.select({ id: education.education_id })
+			.from(education)
+			.where(eq(education.education_id, educationId));
+		if (still) throw staleConflict();
+	}
+	return null;
 }
 
 export async function DeleteEducation(db: Db, educationId: number) {
