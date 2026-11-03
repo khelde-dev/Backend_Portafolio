@@ -60,7 +60,7 @@ describe("los valores son datos, nunca SQL", () => {
 				}),
 			);
 			expect(res.status).toBe(201);
-			expect(await tableCount()).toBe(9);
+			expect(await tableCount()).toBe(10);
 
 			const rows = (
 				await json(await call("/api/projects?currentLocale=en", authed()))
@@ -86,7 +86,7 @@ describe("los valores son datos, nunca SQL", () => {
 				}),
 			);
 			expect(res.status).toBe(201);
-			expect(await tableCount()).toBe(9);
+			expect(await tableCount()).toBe(10);
 
 			const inbox = await json(
 				await call("/api/contact-messages", await adminAuthed()),
@@ -111,7 +111,7 @@ describe("los valores son datos, nunca SQL", () => {
 				}),
 			);
 			expect(res.status).toBe(201);
-			expect(await tableCount()).toBe(9);
+			expect(await tableCount()).toBe(10);
 			const stored = await d1.db
 				.prepare("SELECT description FROM comments")
 				.first<{ description: string }>();
@@ -166,6 +166,6 @@ describe("los valores son datos, nunca SQL", () => {
 			}),
 		);
 		expect(res.status).toBe(400);
-		expect(await tableCount()).toBe(9);
+		expect(await tableCount()).toBe(10);
 	});
 });
