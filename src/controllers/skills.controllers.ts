@@ -1,6 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
 import type { Lang, SkillAdminInput } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
+import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
@@ -67,13 +68,28 @@ export async function UpdateSkill(
 	db: Db,
 	skillId: number,
 	input: SkillAdminInput,
+	expected?: string,
 ) {
 	const [updated] = await db
 		.update(skills)
 		.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
-		.where(eq(skills.skill_id, skillId))
+		.where(
+			andWith(
+				eq(skills.skill_id, skillId),
+				unchangedSince(skills.updated_at, expected),
+			),
+		)
 		.returning();
-	return updated ? toAdmin(updated) : null;
+	if (updated) return toAdmin(updated);
+	// Sin fila: o ya no existe (404) o cambio desde que se leyo (409).
+	if (expected) {
+		const [still] = await db
+			.select({ id: skills.skill_id })
+			.from(skills)
+			.where(eq(skills.skill_id, skillId));
+		if (still) throw staleConflict();
+	}
+	return null;
 }
 
 export async function DeleteSkill(db: Db, skillId: number) {

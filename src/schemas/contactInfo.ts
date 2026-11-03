@@ -42,6 +42,8 @@ const siteUrl = (domain: string, label: string) =>
 const digits = (phone: string) => phone.replace(/\D/g, "");
 
 export const contactInfoInputSchema = z.object({
+	// El `updated_at` que leyo el formulario: si la fila ya cambio, el PUT da 409.
+	updated_at: z.string().max(40).optional(),
 	github_url: siteUrl("github.com", "GitHub"),
 	linkedin_url: siteUrl("linkedin.com", "LinkedIn"),
 	linkedin_name: z

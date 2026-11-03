@@ -8,6 +8,7 @@ import {
 import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
+import { splitExpected } from "../lib/optimistic.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
 import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
 import { contactInfoInputSchema } from "../schemas/contactInfo.js";
@@ -38,7 +39,8 @@ router.put(
 	accessAuth,
 	zValidator("json", contactInfoInputSchema, zodErrorHook),
 	async (c) => {
-		const result = await UpdateContactInfo(c.get("db"), c.req.valid("json"));
+		const { expected, data } = splitExpected(c.req.valid("json"));
+		const result = await UpdateContactInfo(c.get("db"), data, expected);
 
 		await auditLog({
 			db: c.get("db"),

@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import type { Lang, ProjectAdminInput } from "../interfaces/interfaces.js";
 import type { Db } from "../lib/db.js";
 import { isUniqueViolation } from "../lib/dbErrors.js";
+import { andWith, staleConflict, unchangedSince } from "../lib/optimistic.js";
 import {
 	parseJson,
 	toTranslationMap,
@@ -102,14 +103,29 @@ export async function UpdateProject(
 	db: Db,
 	projectId: number,
 	input: ProjectAdminInput,
+	expected?: string,
 ) {
 	try {
 		const [updated] = await db
 			.update(projects)
 			.set({ ...asColumns(input), updated_at: sql`current_timestamp` })
-			.where(eq(projects.project_id, projectId))
+			.where(
+				andWith(
+					eq(projects.project_id, projectId),
+					unchangedSince(projects.updated_at, expected),
+				),
+			)
 			.returning();
-		return updated ? toAdmin(updated) : null;
+		if (updated) return toAdmin(updated);
+		// Sin fila: o ya no existe (404) o cambio desde que se leyo (409).
+		if (expected) {
+			const [still] = await db
+				.select({ id: projects.project_id })
+				.from(projects)
+				.where(eq(projects.project_id, projectId));
+			if (still) throw staleConflict();
+		}
+		return null;
 	} catch (err) {
 		return rethrowConflict(err);
 	}

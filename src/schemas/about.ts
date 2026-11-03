@@ -24,6 +24,8 @@ const aboutTranslationInputSchema = z.object({
 });
 
 export const aboutAdminInputSchema = z.object({
+	// El `updated_at` que leyo el formulario: si la fila ya cambio, el PUT da 409.
+	updated_at: z.string().max(40).optional(),
 	image: r2Key(),
 	title_card_default: z
 		.string()
