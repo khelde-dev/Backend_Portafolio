@@ -23,6 +23,7 @@ import {
 import { customLogger } from "./middleware/logger.middleware.js";
 import about from "./routes/about.routes.js";
 import comments from "./routes/comments.routes.js";
+import contactInfo from "./routes/contactInfo.routes.js";
 import contactMessages from "./routes/contactMessages.routes.js";
 import education from "./routes/education.routes.js";
 import experiences from "./routes/experiences.routes.js";
@@ -103,6 +104,7 @@ app.route("/comments", comments);
 app.route("/projects", projects);
 app.route("/experiences", experiences);
 app.route("/contact-messages", contactMessages);
+app.route("/contact-info", contactInfo);
 app.route("/about", about);
 app.route("/education", education);
 app.route("/skills", skills);

@@ -23,6 +23,7 @@ const POLICY: Record<string, Policy> = {
 	"GET /api/education": "bearer",
 	"GET /api/skills": "bearer",
 	"GET /api/about": "bearer",
+	"GET /api/contact-info": "bearer",
 	"GET /api/comments": "bearer",
 	"POST /api/comments": "bearer",
 	"POST /api/contact-messages": "bearer",
@@ -54,6 +55,9 @@ const POLICY: Record<string, Policy> = {
 
 	"GET /api/about/admin": "access",
 	"PUT /api/about": "access",
+
+	"GET /api/contact-info/admin": "access",
+	"PUT /api/contact-info": "access",
 
 	"GET /api/comments/admin": "access",
 	"PUT /api/comments/:id": "access",

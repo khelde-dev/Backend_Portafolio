@@ -16,6 +16,7 @@ import { TEST_ENV } from "./helpers.js";
 const TABLES = [
 	"about",
 	"comments",
+	"contact_info",
 	"contact_messages",
 	"education",
 	"experience",

@@ -92,6 +92,8 @@ describe("Cloudflare Access (rutas del CMS)", () => {
 		["PUT", "/api/education/1"],
 		["DELETE", "/api/skills/1"],
 		["PUT", "/api/about"],
+		["GET", "/api/contact-info/admin"],
+		["PUT", "/api/contact-info"],
 		["PUT", "/api/comments/1"],
 		["PUT", "/api/contact-messages/1"],
 		["GET", "/api/contact-messages"],
@@ -121,6 +123,7 @@ describe("Cloudflare Access (rutas del CMS)", () => {
 			"/api/education?currentLocale=es",
 			"/api/skills?currentLocale=es",
 			"/api/about?currentLocale=es",
+			"/api/contact-info",
 			"/api/comments",
 		]) {
 			const res = await app.request(path, authed());
