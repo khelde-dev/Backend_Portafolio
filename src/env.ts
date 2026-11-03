@@ -14,6 +14,11 @@ export type Bindings = {
 	MEDIA: R2Bucket;
 	/** Secreto: bearer token que usa el proxy del portafolio. */
 	API_TOKEN: string;
+	/**
+	 * Secreto opcional: bearer exclusivo del CMS. Si existe, las rutas del CMS exigen
+	 * ESTE y no el del sitio publico (que sigue valiendo para las lecturas publicas).
+	 */
+	API_TOKEN_ADMIN?: string;
 	ACCESS_TEAM_DOMAIN: string;
 	ACCESS_AUD: string;
 	/** Llaves publicas fijas (JSON {keys:[...]}) en lugar de bajarlas de Access: pruebas y local. */

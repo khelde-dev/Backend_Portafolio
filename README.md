@@ -4,13 +4,14 @@ API de contenido del portafolio: **Hono en un Cloudflare Worker**, base de datos
 
 ## Cómo encaja
 
-| Pieza                            | Para qué                                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `DB` (D1)                        | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto |
-| `MEDIA` (R2, bucket `portfolio`) | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`)                                    |
-| `API_TOKEN` (secreto)            | bearer token que usa el proxy del portafolio                                                             |
-| Cloudflare Access                | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion`      |
-| `RL_PUBLIC_WRITE`                | límite de peticiones para los POST públicos (comentarios, contacto)                                      |
+| Pieza                                 | Para qué                                                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DB` (D1)                             | contenido: proyectos, experiencia, educación, habilidades, acerca de, comentarios y mensajes de contacto                                                                 |
+| `MEDIA` (R2, bucket `portfolio`)      | imágenes; en la base solo se guardan **claves** (`projects/abc.webp`)                                                                                                    |
+| `API_TOKEN` (secreto)                 | bearer token que usa el proxy del portafolio                                                                                                                             |
+| `API_TOKEN_ADMIN` (secreto, opcional) | bearer exclusivo del CMS: si existe, las rutas del CMS exigen este (el de `API_TOKEN` solo vale para las lecturas públicas). Ponlo igual en `API_SECRET_TOKEN` del admin |
+| Cloudflare Access                     | login del admin (SSO / código por correo); el Worker solo verifica el JWT `Cf-Access-Jwt-Assertion`                                                                      |
+| `RL_PUBLIC_WRITE`                     | límite de peticiones para los POST públicos (comentarios, contacto)                                                                                                      |
 
 Las traducciones (es/en/fr) viven **en la misma fila** (columna JSON `translations`): D1 no tiene transacciones interactivas y así cada escritura es una sola sentencia. Lo que no está traducido cae al valor `*_default`.
 

@@ -2,12 +2,17 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { verifyWithJwks } from "hono/jwt";
+import { timingSafeEqual } from "hono/utils/buffer";
 import type { AppEnv } from "../env.js";
 
 /** Cabecera donde Cloudflare Access entrega el JWT de la sesion. */
 export const ACCESS_HEADER = "Cf-Access-Jwt-Assertion";
 
 const trimSlash = (url: string) => url.replace(/\/$/, "");
+
+/** `Authorization: Bearer <token>` -> `<token>`. */
+const bearerOf = (c: Context<AppEnv>): string | undefined =>
+	c.req.header("Authorization")?.match(/^Bearer +(.+)$/i)?.[1];
 
 /**
  * Protege las rutas de escritura del CMS. Cloudflare Access hace el login
@@ -23,6 +28,18 @@ export const accessAuth = createMiddleware<AppEnv>(async (c, next) => {
 		throw new HTTPException(503, {
 			message: "Cloudflare Access no esta configurado",
 		});
+	}
+
+	// Con un token exclusivo del CMS configurado, el del sitio publico no basta: si
+	// se filtra, no abre las rutas del CMS (que ademas piden la sesion de Access).
+	const adminToken = c.env.API_TOKEN_ADMIN;
+	if (adminToken) {
+		const sent = bearerOf(c);
+		if (!sent || !(await timingSafeEqual(sent, adminToken))) {
+			throw new HTTPException(401, {
+				message: "El token no sirve para el CMS",
+			});
+		}
 	}
 
 	const token = c.req.header(ACCESS_HEADER);
