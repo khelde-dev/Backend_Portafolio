@@ -11,11 +11,12 @@ import {
 import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
+import { registerOrderRoute } from "../lib/orderRoute.js";
 import { parseId } from "../lib/parseId.js";
 import { requireLocale } from "../lib/requireLocale.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
 import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
-import { projectAdminInputSchema } from "../schemas/projects.js";
+import { projectAdminInputSchema, projects } from "../schemas/projects.js";
 
 const router = new Hono<AppEnv>();
 
@@ -36,6 +37,15 @@ router.get("/admin", accessAuth, async (c) => {
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
 	);
+});
+
+// PUT /projects/order - reordenar en lote ([{ id, sort_order }]). Antes de "/:id".
+registerOrderRoute(router, {
+	resource: "projects",
+	table: projects,
+	idColumn: projects.project_id,
+	sortColumn: projects.sort_order,
+	updatedColumn: projects.updated_at,
 });
 
 // POST /projects - crear. Protegido por JWT (Fase 4b, docs/04-hono-projects-experiences-crud.md).

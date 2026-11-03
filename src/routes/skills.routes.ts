@@ -11,11 +11,12 @@ import {
 import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
+import { registerOrderRoute } from "../lib/orderRoute.js";
 import { parseId } from "../lib/parseId.js";
 import { requireLocale } from "../lib/requireLocale.js";
 import { zodErrorHook } from "../lib/zodErrorHook.js";
 import { accessAuth, adminEmail } from "../middleware/access.middleware.js";
-import { skillAdminInputSchema } from "../schemas/skills.js";
+import { skillAdminInputSchema, skills } from "../schemas/skills.js";
 
 const router = new Hono<AppEnv>();
 
@@ -36,6 +37,15 @@ router.get("/admin", accessAuth, async (c) => {
 		{ success: true, data: result } as ApiResponse<typeof result>,
 		200,
 	);
+});
+
+// PUT /skills/order - reordenar en lote ([{ id, sort_order }]). Antes de "/:id".
+registerOrderRoute(router, {
+	resource: "skills",
+	table: skills,
+	idColumn: skills.skill_id,
+	sortColumn: skills.sort_order,
+	updatedColumn: skills.updated_at,
 });
 
 // POST /skills - crear. Protegido por JWT.

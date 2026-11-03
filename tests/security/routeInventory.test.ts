@@ -30,21 +30,25 @@ const POLICY: Record<string, Policy> = {
 	// Todo lo demas es del CMS: bearer + sesion de Cloudflare Access.
 	"GET /api/projects/admin": "access",
 	"POST /api/projects": "access",
+	"PUT /api/projects/order": "access",
 	"PUT /api/projects/:id": "access",
 	"DELETE /api/projects/:id": "access",
 
 	"GET /api/experiences/admin": "access",
 	"POST /api/experiences": "access",
+	"PUT /api/experiences/order": "access",
 	"PUT /api/experiences/:id": "access",
 	"DELETE /api/experiences/:id": "access",
 
 	"GET /api/education/admin": "access",
 	"POST /api/education": "access",
+	"PUT /api/education/order": "access",
 	"PUT /api/education/:id": "access",
 	"DELETE /api/education/:id": "access",
 
 	"GET /api/skills/admin": "access",
 	"POST /api/skills": "access",
+	"PUT /api/skills/order": "access",
 	"PUT /api/skills/:id": "access",
 	"DELETE /api/skills/:id": "access",
 
@@ -53,6 +57,12 @@ const POLICY: Record<string, Policy> = {
 
 	"GET /api/comments/admin": "access",
 	"PUT /api/comments/:id": "access",
+	"DELETE /api/comments/:id": "access",
+	"GET /api/comments/pending-count": "access",
+
+	"GET /api/media": "access",
+	"POST /api/media": "access",
+	"DELETE /api/media/:key{.+}": "access",
 
 	"GET /api/contact-messages": "access",
 	"GET /api/contact-messages/unread-count": "access",
