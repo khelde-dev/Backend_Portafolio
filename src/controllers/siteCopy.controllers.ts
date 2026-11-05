@@ -49,6 +49,8 @@ export async function GetSiteCopy(db: Db, { currentLocale }: Lang) {
 		hero_lead: t.hero_lead ?? row.hero_lead_default,
 		manifesto_text: t.manifesto_text ?? row.manifesto_text_default,
 		meta_description: t.meta_description ?? row.meta_description_default,
+		// Clave en R2 del PDF; el sitio la convierte en URL con su `PUBLIC_MEDIA_URL`.
+		cv_pdf: row.cv_pdf_key,
 	};
 }
 

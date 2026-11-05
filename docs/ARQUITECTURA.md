@@ -111,6 +111,11 @@ Comentarios exigen `country_flag` de 2 letras y `country` de hasta 100 caractere
   /contact-messages/unread-count`, `PUT /contact-messages/:id` y `DELETE`.
 - Medios: `POST /media` (cuerpo binario `image/webp`), `GET /media` (con dónde se
   usa cada imagen) y `DELETE /media/:key`.
+- Currículum: `POST /cv` (cuerpo binario `application/pdf`, hasta 5 MB), `GET /cv` y
+  `DELETE /cv`. Es **un solo PDF**: subir otro reemplaza al anterior. Se guarda en R2 como
+  `cv/CV-Erick-Gonzalez-<id>.pdf` con `Content-Disposition: inline` (el navegador lo abre) y
+  su clave vive en `site_copy.cv_pdf_key`; el sitio la recibe en `GET /site-copy` como
+  `cv_pdf`. No aparece en Medios ni se puede borrar desde ahí.
 - `GET /audit?limit=`: historial de cambios del CMS.
 
 ## Comportamientos que conviene conocer

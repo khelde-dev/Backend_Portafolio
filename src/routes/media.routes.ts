@@ -8,6 +8,7 @@ import { GetMediaUsage, ListMedia } from "../controllers/media.controllers.js";
 import type { AppEnv } from "../env.js";
 import type { ApiResponse } from "../interfaces/interfaces.js";
 import { auditLog } from "../lib/auditLog.js";
+import { isCvKey } from "../lib/cv.js";
 import {
 	IMAGE_CACHE_CONTROL,
 	isSafeKey,
@@ -125,7 +126,7 @@ router.post(
 // papelera: el borrado es definitivo, por eso 409 si esta en uso.
 router.delete("/:key{.+}", async (c) => {
 	const key = normalizeKey(c.req.param("key"));
-	if (!isSafeKey(key)) {
+	if (!isSafeKey(key) || isCvKey(key)) {
 		throw new HTTPException(400, { message: "Clave de imagen no válida" });
 	}
 
