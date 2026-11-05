@@ -16,7 +16,7 @@ clientes, ambos por HTTP:
 | ----------------- | ---------------------------------- | ---------------------------------------------------------------------- |
 | `DB`              | Cloudflare D1 (`portafolio-db`)    | Contenido, comentarios, mensajes, textos del sitio e historial         |
 | `MEDIA`           | Cloudflare R2 (bucket `portfolio`) | Imágenes. En la base solo se guarda la **clave** (`projects/abc.webp`) |
-| `RL_PUBLIC_WRITE` | Rate Limiting de Workers           | 5 peticiones por 60 s en los POST públicos, por IP de Cloudflare       |
+| `RL_PUBLIC_WRITE` | Rate Limiting de Workers           | 5 peticiones por 60 s en los POST públicos, por IP del visitante       |
 
 Las **traducciones** (es, en, fr) viven en la misma fila, en la columna JSON
 `translations`: D1 no tiene transacciones interactivas, y así cada escritura es
@@ -78,7 +78,8 @@ Tres niveles, de menos a más estricto:
   configuración responde 503 y no deja pasar a nadie.
 - **Local.** `wrangler dev` no pasa por Access: se usa `ACCESS_JWKS` (llaves
   públicas) en `.dev.vars` y un JWT firmado con la llave privada. El admin lo
-  genera con `pnpm dev:access`.
+  genera con `pnpm dev:access`. `ACCESS_JWKS` **solo se lee cuando la petición
+  llega a `localhost`**: en el Worker desplegado se ignora aunque alguien la cargue.
 - **CORS** restringido a `ALLOWED_ORIGINS`, nunca `*`.
 
 Las rutas nuevas deben declararse en `tests/security/routeInventory.test.ts`: una
@@ -94,6 +95,9 @@ descripción y foto del hero) y `/contact-info` (GitHub, LinkedIn, teléfono y
 correo; iguales en todos los idiomas).
 
 **Escritura pública, con límite:** `POST /comments` y `POST /contact-messages`.
+El límite es por visitante: el sitio manda la IP real en `X-Visitor-IP` (solo se
+lee porque la petición ya pasó el bearer; sin ella manda la IP de Cloudflare).
+Comentarios exigen `country_flag` de 2 letras y `country` de hasta 100 caracteres.
 
 **CMS** (bearer + Access):
 

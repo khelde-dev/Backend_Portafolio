@@ -31,7 +31,23 @@ const isRateLimited = (
 	return bucket.count > limit;
 };
 
-const clientKey = (c: Context): string =>
+/** Direcciones IPv4 o IPv6 en texto; cualquier otra cosa se ignora. */
+const IP_FORMAT = /^[0-9a-fA-F:.]{3,45}$/;
+
+/**
+ * Quien hace la peticion. El sitio publico llama desde su Worker, asi que
+ * `cf-connecting-ip` es la IP de ESE Worker y todos los visitantes compartirian un
+ * solo cupo: el sitio manda la IP real en `X-Visitor-IP`. Se confia en esa cabecera
+ * porque este middleware corre despues del bearer token (index.ts): solo la manda
+ * quien ya tiene el token del sitio. Sin ella (clientes directos) manda la IP de Cloudflare.
+ */
+const clientKey = (c: Context): string => {
+	const visitor = c.req.header("x-visitor-ip")?.trim();
+	if (visitor && IP_FORMAT.test(visitor)) return visitor;
+	return connectionKey(c);
+};
+
+const connectionKey = (c: Context): string =>
 	c.req.header("cf-connecting-ip") ??
 	c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
 	c.req.header("x-real-ip") ??
