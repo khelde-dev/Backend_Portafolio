@@ -29,12 +29,7 @@ Cloudflare Access: en Zero Trust crea una _Self-hosted application_ para el domi
 
 ## Datos desde Turso
 
-```bash
-bun run db:import-turso backups/turso/<fecha>        # genera backups/d1-import.sql (fuera de git)
-bunx wrangler d1 execute DB --remote --file=backups/d1-import.sql
-```
-
-Convierte el respaldo (un JSON por tabla) al esquema nuevo y mete las traducciones en la columna JSON. Las tablas que falten en el respaldo quedan vacías.
+El backend nació sobre Turso y ya migró a D1. Las herramientas de esa migración se conservan en [`legacy/turso-migration/`](legacy/turso-migration/README.md); ya no forman parte de los comandos del proyecto.
 
 ## Desarrollo
 
@@ -51,7 +46,7 @@ bun run typecheck
 
 Para llamar a las rutas del CMS en local, `wrangler dev` no pasa por Access: usa `ACCESS_JWKS` (llaves públicas) en `.dev.vars` y un JWT firmado con la llave privada correspondiente.
 
-Servidor local: `http://127.0.0.1:8787/api`. `wrangler dev` no lee los secretos del Worker desplegado: pon tu `API_TOKEN` de desarrollo en `.dev.vars` (ignorado por git) y el mismo valor en `API_SECRET_TOKEN` del portafolio. Detalle de las pruebas y del CI en [docs/07-testing-y-ci.md](docs/07-testing-y-ci.md).
+Servidor local: `http://127.0.0.1:8787/api`. `wrangler dev` no lee los secretos del Worker desplegado: pon tu `API_TOKEN` de desarrollo en `.dev.vars` (ignorado por git) y el mismo valor en `API_SECRET_TOKEN` del portafolio. Detalle de las pruebas y del CI en [docs/PRUEBAS-Y-CI.md](docs/PRUEBAS-Y-CI.md); el diseño de la API, en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md).
 
 ## Migraciones
 
