@@ -26,6 +26,7 @@ import audit from "./routes/audit.routes.js";
 import comments from "./routes/comments.routes.js";
 import contactInfo from "./routes/contactInfo.routes.js";
 import contactMessages from "./routes/contactMessages.routes.js";
+import cv from "./routes/cv.routes.js";
 import education from "./routes/education.routes.js";
 import experiences from "./routes/experiences.routes.js";
 import media from "./routes/media.routes.js";
@@ -77,12 +78,15 @@ app.use(
 // Content-Type: application/json en CADA escritura, incluidas las que no
 // llevan body (un DELETE).
 app.use("*", csrfMiddleware());
-// /api/media sube imagenes: tiene su propio tope (2 MB) y mas tiempo (ver
-// routes/media.routes.ts), asi que los limites globales de abajo no le aplican.
+// /api/media (imagenes, 2 MB) y /api/cv (PDF, 5 MB) suben archivos: tienen su propio
+// tope y mas tiempo (ver routes/media.routes.ts y routes/cv.routes.ts), asi que los
+// limites globales de abajo no les aplican.
 const unlessMedia =
 	(middleware: MiddlewareHandler<AppEnv>): MiddlewareHandler<AppEnv> =>
 	(c, next) =>
-		c.req.path.startsWith("/api/media") ? next() : middleware(c, next);
+		c.req.path.startsWith("/api/media") || c.req.path.startsWith("/api/cv")
+			? next()
+			: middleware(c, next);
 
 // 50kb: todos los payloads son formularios/JSON chicos.
 app.use("*", unlessMedia(bodyLimit({ maxSize: 50 * 1024 })));
@@ -128,6 +132,7 @@ app.route("/about", about);
 app.route("/education", education);
 app.route("/skills", skills);
 app.route("/media", media);
+app.route("/cv", cv);
 app.route("/audit", audit);
 
 export default app;

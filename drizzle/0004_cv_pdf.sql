@@ -1,0 +1,1 @@
+ALTER TABLE `site_copy` ADD `cv_pdf_key` text;
