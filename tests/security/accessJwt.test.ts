@@ -248,3 +248,19 @@ describe("Access mal configurado: falla cerrado", () => {
 		expect(res.status).toBe(401);
 	});
 });
+
+describe("ACCESS_JWKS solo vale en local", () => {
+	const REMOTE =
+		"https://backend-portafolio.example.workers.dev/api/projects/admin";
+
+	it("en el Worker desplegado se ignora y, sin dominio de equipo, no deja pasar a nadie", async () => {
+		const res = await app.request(REMOTE, withJwt(await accessJwt()), {
+			ACCESS_TEAM_DOMAIN: "",
+		});
+		expect(res.status).toBe(503);
+	});
+
+	it("en localhost sigue sirviendo para las pruebas y el desarrollo", async () => {
+		expect((await call(await accessJwt())).status).toBe(200);
+	});
+});

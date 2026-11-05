@@ -301,3 +301,76 @@ describe("PUT /api/comments/:id", () => {
 		expect(res.status).toBe(400);
 	});
 });
+
+describe("POST /api/comments: IP del visitante y pais", () => {
+	const post = (headers: Record<string, string>, body: unknown = {}) =>
+		app.request(
+			"/api/comments",
+			authed({
+				method: "POST",
+				headers: { "Content-Type": "application/json", ...headers },
+				body: JSON.stringify(body),
+			}),
+		);
+
+	it("X-Visitor-IP separa el cupo de cada visitante aunque lleguen por la misma conexion", async () => {
+		const proxy = uniqueIp();
+		const statuses: number[] = [];
+		// Seis visitantes distintos detras del mismo Worker: ninguno se bloquea.
+		for (let i = 0; i < 6; i++) {
+			const res = await post({
+				"X-Forwarded-For": proxy,
+				"X-Visitor-IP": uniqueIp(),
+			});
+			statuses.push(res.status);
+		}
+		expect(statuses.every((s) => s === 400)).toBe(true);
+	});
+
+	it("el mismo visitante si se bloquea a la sexta", async () => {
+		const proxy = uniqueIp();
+		const visitor = uniqueIp();
+		const statuses: number[] = [];
+		for (let i = 0; i < 6; i++) {
+			statuses.push(
+				(await post({ "X-Forwarded-For": proxy, "X-Visitor-IP": visitor }))
+					.status,
+			);
+		}
+		expect(statuses[5]).toBe(429);
+	});
+
+	it("una X-Visitor-IP que no parece IP se ignora", async () => {
+		const proxy = uniqueIp();
+		const statuses: number[] = [];
+		for (let i = 0; i < 6; i++) {
+			statuses.push(
+				(await post({ "X-Forwarded-For": proxy, "X-Visitor-IP": `<${i}>` }))
+					.status,
+			);
+		}
+		expect(statuses[5]).toBe(429);
+	});
+
+	it("rechaza un codigo de pais que no sean 2 letras y un pais enorme", async () => {
+		const base = {
+			name: "Ana",
+			description: "Excelente trabajo en el proyecto",
+			country: "Mexico",
+			country_flag: "mx",
+		};
+		for (const bad of [
+			{ country_flag: "x" },
+			{ country_flag: "mex" },
+			{ country_flag: "1!" },
+			{ country: "M".repeat(101) },
+			{ country: "" },
+		]) {
+			const res = await post(
+				{ "X-Forwarded-For": uniqueIp() },
+				{ ...base, ...bad },
+			);
+			expect(res.status).toBe(400);
+		}
+	});
+});
