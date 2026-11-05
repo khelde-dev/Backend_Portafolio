@@ -70,6 +70,10 @@ const POLICY: Record<string, Policy> = {
 	"DELETE /api/comments/:id": "access",
 	"GET /api/comments/pending-count": "access",
 
+	"GET /api/cv": "access",
+	"POST /api/cv": "access",
+	"DELETE /api/cv": "access",
+
 	"GET /api/media": "access",
 	"POST /api/media": "access",
 	"DELETE /api/media/:key{.+}": "access",

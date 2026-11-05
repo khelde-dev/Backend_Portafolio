@@ -20,6 +20,8 @@ export const siteCopy = sqliteTable("site_copy", {
 	hero_lead_default: text("hero_lead_default").notNull(),
 	manifesto_text_default: text("manifesto_text_default").notNull(),
 	meta_description_default: text("meta_description_default").notNull(),
+	/** Clave en R2 del PDF del curriculum (`cv/…pdf`), o null si no hay. Se sube por /api/cv. */
+	cv_pdf_key: text("cv_pdf_key"),
 	translations: translationsColumn(),
 	...timestamps,
 });

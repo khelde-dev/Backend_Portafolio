@@ -66,6 +66,7 @@ describe("site-copy sobre una D1 real", () => {
 			hero_lead: "Presentacion",
 			manifesto_text: "Manifiesto",
 			meta_description: "Descripcion",
+			cv_pdf: null,
 		});
 		const en = (await read("en")).data;
 		expect(en.hero_label).toBe("Developer");

@@ -1,8 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, it } from "bun:test";
 import fc from "fast-check";
-import { buildImportSql } from "../../scripts/tursoToD1.js";
-import { migrationStatements } from "../support/d1.js";
+import { migrationStatements } from "../../tests/support/d1.js";
+import { buildImportSql } from "./tursoToD1.js";
 
 /**
  * El importador de Turso arma SQL como texto, asi que es el unico lugar donde

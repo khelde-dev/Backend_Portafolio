@@ -21,8 +21,16 @@ const bearerOf = (c: Context<AppEnv>): string | undefined =>
  * de la aplicacion en Access) y el emisor. No hay contrasenas ni tabla de
  * usuarios.
  */
+/** `wrangler dev` y las pruebas corren en estos hosts; el Worker desplegado, nunca. */
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 export const accessAuth = createMiddleware<AppEnv>(async (c, next) => {
-	const { ACCESS_AUD: aud, ACCESS_TEAM_DOMAIN: team, ACCESS_JWKS } = c.env;
+	const { ACCESS_AUD: aud, ACCESS_TEAM_DOMAIN: team } = c.env;
+	// ACCESS_JWKS (llaves de prueba) solo vale en local: si alguien la carga por error
+	// en el Worker desplegado, se ignora y se verifica contra las llaves de Cloudflare.
+	const ACCESS_JWKS = LOCAL_HOSTS.has(new URL(c.req.url).hostname)
+		? c.env.ACCESS_JWKS
+		: undefined;
 
 	if (!aud || (!team && !ACCESS_JWKS)) {
 		throw new HTTPException(503, {

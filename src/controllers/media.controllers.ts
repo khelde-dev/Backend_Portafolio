@@ -1,3 +1,4 @@
+import { isCvKey } from "../lib/cv.js";
 import type { Db } from "../lib/db.js";
 import { normalizeKey } from "../lib/media.js";
 import { about } from "../schemas/about.js";
@@ -144,6 +145,8 @@ export async function ListMedia(
 	for (let page = 0; page < MAX_PAGES; page++) {
 		const listing = await bucket.list({ limit: 1000, cursor });
 		for (const object of listing.objects) {
+			// El curriculum se gestiona en /api/cv, no en la biblioteca de imagenes.
+			if (isCvKey(object.key)) continue;
 			objects.push({
 				key: object.key,
 				size: object.size,

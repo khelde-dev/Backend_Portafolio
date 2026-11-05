@@ -31,8 +31,13 @@ export const insertCommentsSchema = createInsertSchema(comments, {
 	direction: z.enum(["left", "bottom"], {
 		message: "La dirección debe ser 'left' o 'bottom'",
 	}),
-	country_flag: z.string(),
-	country: z.string(),
+	country_flag: z
+		.string()
+		.regex(/^[A-Za-z]{2}$/, "El código de país debe tener 2 letras"),
+	country: z
+		.string()
+		.min(1, "El país es requerido")
+		.max(100, "El país es muy largo"),
 	status: z.enum(COMMENT_STATUSES),
 }).omit({ comment_id: true, created_at: true, updated_at: true });
 

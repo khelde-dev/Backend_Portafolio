@@ -1,4 +1,4 @@
-# 07 · Pruebas de seguridad y CI/CD
+# Pruebas y CI/CD
 
 El Worker se despliega solo cuando llega código a `main` (integración Git de
 Cloudflare), así que **lo que pasa por el CI es lo único que separa un cambio
@@ -7,18 +7,18 @@ dejar la puerta cerrada.
 
 ## Cómo está organizada la suite
 
-| Carpeta | Qué prueba | Base de datos | Comando |
-|---|---|---|---|
-| `tests/unit/` | Rutas y controladores, un archivo por recurso | doble (`tests/support/fakeDb.ts`) | `bun run test:unit` |
-| `tests/security/` | Ataques contra auth, JWT, CORS/CSRF, cabeceras, errores, entradas, límite de peticiones, higiene del repo | doble | `bun run test:security` |
-| `tests/property/` | Propiedades con fast-check: invariantes, fuzzing de esquemas, importador de Turso contra SQLite real | `bun:sqlite` en memoria | `bun run test:property` |
-| `tests/integration/` | La app completa sobre una **D1 real** (Miniflare en memoria) con las migraciones reales | D1 real | `bun run test:integration` |
+| Carpeta              | Qué prueba                                                                                                | Base de datos                     | Comando                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------- |
+| `tests/unit/`        | Rutas y controladores, un archivo por recurso                                                             | doble (`tests/support/fakeDb.ts`) | `bun run test:unit`        |
+| `tests/security/`    | Ataques contra auth, JWT, CORS/CSRF, cabeceras, errores, entradas, límite de peticiones, higiene del repo | doble                             | `bun run test:security`    |
+| `tests/property/`    | Propiedades con fast-check: invariantes y fuzzing de esquemas                                             | `bun:sqlite` en memoria           | `bun run test:property`    |
+| `tests/integration/` | La app completa sobre una **D1 real** (Miniflare en memoria) con las migraciones reales                   | D1 real                           | `bun run test:integration` |
 
 `bun run test` corre todo. `bun run test:coverage` mide cobertura de las tres
 primeras (pisos en `bunfig.toml`: 95 % de líneas, 90 % de funciones) y
 `bun run ci` repite localmente lo que corre GitHub Actions.
 
-> Las pruebas unitarias necesitan el *preload* que sustituye `createDb` por el
+> Las pruebas unitarias necesitan el _preload_ que sustituye `createDb` por el
 > doble; las de integración necesitan lo contrario. Por eso los scripts de
 > `package.json` pasan `--preload` solo a las unitarias, y `bun test` a secas
 > no sirve: usa `bun run test`.
@@ -28,7 +28,7 @@ primeras (pisos en `bunfig.toml`: 95 % de líneas, 90 % de funciones) y
 - **`routeInventory`** — la lista de rutas con su política (`health`, `bearer`,
   `access`) es explícita. Una ruta nueva sin declarar **rompe el test**, y cada
   ruta se prueba sin token, con token falso, sin sesión de Access y con todo
-  válido. Además verifica que la autenticación va *antes* que la validación
+  válido. Además verifica que la autenticación va _antes_ que la validación
   (no se filtra el esquema) y que una ruta inexistente responde igual que una
   protegida.
 - **`accessJwt`** — JWT expirado, sin `exp`, `nbf`/`iat` futuros, `aud`/`iss`
@@ -59,7 +59,8 @@ primeras (pisos en `bunfig.toml`: 95 % de líneas, 90 % de funciones) y
 
 ### Hallazgos que esta suite corrigió
 
-Al escribirla aparecieron fallos reales, ya arreglados:
+Al escribirla aparecieron fallos reales, ya arreglados (historial; el detalle
+de la auditoría está en [`legacy-v2/00-auditoria.md`](./legacy-v2/00-auditoria.md)):
 
 1. `errorHandler` estaba registrado como middleware y **nunca atrapaba nada**:
    Hono manda las excepciones a `onError` antes. Los 401/403/500 salían en
@@ -75,13 +76,13 @@ Al escribirla aparecieron fallos reales, ya arreglados:
 
 ## Pipelines (`.github/workflows/`)
 
-| Archivo | Cuándo | Qué hace |
-|---|---|---|
-| `ci-dev.yml` | PR hacia `dev` | `checks.yml` (auditoría informativa) |
-| `ci-main.yml` | PR hacia `main` y push a `main` | `checks.yml` (auditoría **obligatoria**) |
-| `checks.yml` | reutilizable | Biome sin escribir, `tsc`, deriva de migraciones, unitarias+seguridad+propiedades con cobertura, integración con D1 real, `wrangler deploy --dry-run`, `bun audit` |
-| `security.yml` | PR a `dev`/`main`, push a `main`, lunes | CodeQL, gitleaks, revisión de dependencias nuevas, auditoría semanal |
-| `dependabot.yml` | semanal | PRs agrupados de dependencias y de acciones, hacia `dev` |
+| Archivo          | Cuándo                                  | Qué hace                                                                                                                                                           |
+| ---------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ci-dev.yml`     | PR hacia `dev`                          | `checks.yml` (auditoría informativa)                                                                                                                               |
+| `ci-main.yml`    | PR hacia `main` y push a `main`         | `checks.yml` (auditoría **obligatoria**)                                                                                                                           |
+| `checks.yml`     | reutilizable                            | Biome sin escribir, `tsc`, deriva de migraciones, unitarias+seguridad+propiedades con cobertura, integración con D1 real, `wrangler deploy --dry-run`, `bun audit` |
+| `security.yml`   | PR a `dev`/`main`, push a `main`, lunes | CodeQL, gitleaks, revisión de dependencias nuevas, auditoría semanal                                                                                               |
+| `dependabot.yml` | semanal                                 | PRs agrupados de dependencias y de acciones, hacia `dev`                                                                                                           |
 
 Ningún job necesita secretos de Cloudflare: la D1 de las pruebas es Miniflare y
 el empaquetado usa `--dry-run`.
@@ -91,12 +92,12 @@ el empaquetado usa `--dry-run`.
 Sin esto el CI avisa pero no impide nada:
 
 1. **Settings → Branches → Add rule** para `main` (y otra para `dev`).
-2. Marca *Require a pull request before merging* y *Require status checks to
-   pass*. Elige: `checks / Lint, tipos y migraciones`, `checks / Unitarias,
+2. Marca _Require a pull request before merging_ y _Require status checks to
+   pass_. Elige: `checks / Lint, tipos y migraciones`, `checks / Unitarias,
    seguridad y propiedades`, `checks / Integración (D1 real en memoria)`,
    `checks / Empaquetado del Worker` y, en `main`, `checks / Auditoría de
    dependencias`, `CodeQL` y `Escaneo de secretos (gitleaks)`.
-3. Activa *Do not allow bypassing the above settings*.
+3. Activa _Do not allow bypassing the above settings_.
 
 ### Despliegue (Cloudflare Workers Builds)
 
@@ -114,8 +115,13 @@ conviven).
 ## Qué no cubre
 
 - Cloudflare Access de punta a punta: el JWT se simula con una llave propia.
-  Hasta que exista `khelde.com` y la aplicación en Zero Trust, ese tramo solo se
-  puede probar a mano.
+  Ese tramo solo se puede probar a mano contra el Worker desplegado.
 - Carga o denegación de servicio: el límite real lo imponen Cloudflare y el
   binding de rate limiting, no esta suite.
 - Mutation testing: Stryker no soporta el runner de bun.
+
+## Pruebas legacy
+
+Las pruebas del convertidor de Turso a D1 viven en
+[`../legacy/turso-migration/`](../legacy/turso-migration/README.md). **No** las
+corre el CI ni `bun run test`; se ejecutan aparte si se repite la migración.
