@@ -36,8 +36,6 @@ src/
 └── interfaces/       # tipos compartidos
 drizzle/              # migraciones SQL versionadas (0000 a 0003 y su meta)
 tests/                # unit, security, property, integration, support
-scripts/              # smoke-d1.ts
-legacy/               # herramientas de un solo uso (migración Turso → D1)
 ```
 
 ## Orden de los middlewares
@@ -168,4 +166,4 @@ bun run db:migrate:remote  # D1 de producción
 
 El backend nació sobre Turso (libSQL) y la documentación de esa etapa está en
 [`legacy-v2/`](./legacy-v2/README.md). Las herramientas con las que se migró a D1
-están en [`../legacy/turso-migration/`](../legacy/turso-migration/README.md).
+no se versionan.
