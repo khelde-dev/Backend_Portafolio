@@ -119,9 +119,3 @@ conviven).
 - Carga o denegación de servicio: el límite real lo imponen Cloudflare y el
   binding de rate limiting, no esta suite.
 - Mutation testing: Stryker no soporta el runner de bun.
-
-## Pruebas legacy
-
-Las pruebas del convertidor de Turso a D1 viven en
-[`../legacy/turso-migration/`](../legacy/turso-migration/README.md). **No** las
-corre el CI ni `bun run test`; se ejecutan aparte si se repite la migración.

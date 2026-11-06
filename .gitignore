@@ -37,3 +37,8 @@ backups/
 .wrangler/
 .dev.vars
 coverage/
+
+# Herramientas que solo viven en este equipo, no en GitHub: la migracion Turso -> D1
+# (un solo uso, ya hecha) y el smoke test contra una D1 real.
+legacy/
+scripts/
