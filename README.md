@@ -29,7 +29,7 @@ Cloudflare Access: en Zero Trust crea una _Self-hosted application_ para el domi
 
 ## Datos desde Turso
 
-El backend nació sobre Turso y ya migró a D1. Las herramientas de esa migración se conservan en [`legacy/turso-migration/`](legacy/turso-migration/README.md); ya no forman parte de los comandos del proyecto.
+El backend nació sobre Turso y ya migró a D1. Las herramientas de esa migración no se versionan (viven solo en el equipo de quien las usó); la documentación de esa etapa está en [`docs/legacy-v2/`](docs/legacy-v2/README.md).
 
 ## Desarrollo
 

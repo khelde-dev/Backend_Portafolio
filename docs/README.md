@@ -9,4 +9,3 @@
 Otros lugares:
 
 - [`../README.md`](../README.md): puesta en marcha y comandos del día a día.
-- [`../legacy/turso-migration/`](../legacy/turso-migration/README.md): herramientas con las que se migró de Turso a D1.
