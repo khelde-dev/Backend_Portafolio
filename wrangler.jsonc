@@ -42,7 +42,7 @@
 		// Team domain: https://<equipo>.cloudflareaccess.com  /  AUD: "Application Audience (AUD) Tag" de la app en Access.
 		"ACCESS_TEAM_DOMAIN": "https://throbbing-lake-8623.cloudflareaccess.com",
 		"ACCESS_AUD": "a285709a3ab3c0bdfcfa01e6366d6a621602007ef0a8a51865745f2cd327b340",
-		// URL publica del bucket R2: r2.dev mientras se prueba; con khelde.com, un dominio propio (media.khelde.com).
-		"PUBLIC_MEDIA_URL": "https://pub-a3fda08feb4f417fa5634c34e7959461.r2.dev"
+		// URL publica del bucket R2: dominio propio conectado al bucket (Custom Domain de R2).
+		"PUBLIC_MEDIA_URL": "https://media.khelde.dev"
 	}
 }
