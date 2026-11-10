@@ -5,6 +5,12 @@
 	//   (el bucket R2 "portfolio" ya existe)
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "backend-portafolio",
+
+	// El API vive en api.khelde.dev: se apagan la URL *.workers.dev y las URLs de
+	// vista previa. Desplegar esto el ULTIMO, cuando el sitio y el admin ya usen
+	// api.khelde.dev (el sitio llama al backend por URL publica).
+	"workers_dev": false,
+	"preview_urls": false,
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
